@@ -1,0 +1,163 @@
+import Piece from '../classes/Piece';
+import { Board, Line, PieceType, SquareIdx } from '../types/types';
+import { compare1dArr } from './misc';
+import { isSquareIdx } from './typeCheck';
+
+function getLineMoves<N extends number>({
+  dir,
+  board,
+  start,
+  range = Infinity,
+  canCapture = true,
+  onlyForward
+}: {
+  dir: Line;
+  board: Board;
+  start: SquareIdx<N>;
+  range?: number;
+  canCapture?: boolean;
+  onlyForward?: boolean;
+}) {
+  let lines = {
+    diagonal: [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1]
+    ],
+    xy: [
+      [0, 1],
+      [0, -1],
+      [1, 0],
+      [-1, 0]
+    ]
+  }[dir];
+
+  if (onlyForward) {
+    const piece = board[start[0] as number][start[1] as number] as Piece;
+    const forward = piece.color === 'white' ? 1 : -1;
+
+    lines = lines.filter((l) => l[0] === forward);
+  }
+
+  const moves: SquareIdx<N>[] = [];
+  let move;
+  lines.forEach((d) => {
+    let rangeForLine = range;
+    move = [start[0] + d[0], start[1] + d[1]];
+    while (
+      rangeForLine &&
+      // move is a valid square on the board
+      isSquareIdx(board.length, move)
+    ) {
+      const square = board[move[0]][move[1]];
+      if (square === null) {
+        moves.push(move);
+      } else if (
+        canCapture &&
+        // square has piece that isn't same color as piece moving
+        square.color !== board[start[0] as number][start[1] as number]?.color
+      ) {
+        moves.push(move);
+        break;
+      } else {
+        break;
+      }
+
+      move = [move[0] + d[0], move[1] + d[1]];
+      rangeForLine--;
+    }
+  });
+
+  return moves;
+}
+
+export const getPieceMoves = <N extends number>(
+  pieceType: Exclude<PieceType, 'pawn'>,
+  board: Board,
+  square: SquareIdx<N>
+) => {
+  switch (pieceType) {
+    case 'knight': {
+      const knightJumps = [
+        [1, 2],
+        [1, -2],
+        [-1, 2],
+        [-1, -2],
+        [2, 1],
+        [2, -1],
+        [-2, 1],
+        [-2, -1]
+      ] as const;
+
+      return knightJumps.reduce((acc, curr) => {
+        const move = [square[0] + curr[0], square[1] + curr[1]];
+        if (isSquareIdx(board.length, move)) acc.push(move);
+        return acc;
+      }, [] as SquareIdx<typeof board.length>[]);
+    }
+
+    case 'bishop': {
+      return getLineMoves({ board, dir: 'diagonal', start: square });
+    }
+
+    case 'rook': {
+      return getLineMoves({ board, dir: 'xy', start: square });
+    }
+
+    case 'queen': {
+      return getLineMoves({ board, dir: 'diagonal', start: square }).concat(
+        getLineMoves({ board, dir: 'xy', start: square })
+      );
+    }
+
+    case 'king': {
+      return getLineMoves({
+        board,
+        dir: 'diagonal',
+        start: square,
+        range: 1
+      }).concat(getLineMoves({ board, dir: 'xy', start: square, range: 1 }));
+    }
+
+    default:
+      return [];
+  }
+};
+
+export const getPawnMoves = <N extends number>(
+  board: Board,
+  square: SquareIdx<N>,
+  enPassant?: SquareIdx<N>
+) => {
+  const startSquare = board[square[0] as number][square[1] as number];
+  if (!startSquare) return [];
+
+  const firstMove =
+    (startSquare.color === 'white' && square[0] === 1) ||
+    (startSquare.color === 'black' && square[0] === 6);
+
+  const regMoves = getLineMoves({
+    board,
+    start: square,
+    dir: 'xy',
+    range: firstMove ? 2 : 1,
+    onlyForward: true,
+    canCapture: false
+  });
+
+  const captureMoves = getLineMoves({
+    board,
+    start: square,
+    dir: 'diagonal',
+    range: 1,
+    onlyForward: true
+  }).filter(
+    (m) =>
+      compare1dArr(m, enPassant || []) ||
+      (board[m[0] as number][m[1] as number] &&
+        board[m[0] as number][m[1] as number]?.color !== startSquare.color)
+  );
+
+  return regMoves.concat(captureMoves);
+};
