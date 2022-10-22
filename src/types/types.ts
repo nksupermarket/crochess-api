@@ -1,4 +1,4 @@
-import { COLORS, PIECE_TYPES } from 'src/utils/constants';
+import { COLORS, FILES, PIECE_TYPES } from 'src/utils/constants';
 import Piece from '../classes/Piece';
 
 export type PieceType = typeof PIECE_TYPES[number];
@@ -6,6 +6,8 @@ export type PieceType = typeof PIECE_TYPES[number];
 export type PieceAbr = 'r' | 'k' | 'n' | 'b' | 'q' | 'p';
 
 export type Colors = typeof COLORS[number];
+
+export type Files = typeof FILES[number];
 
 export type Tuple<
   T,
@@ -17,14 +19,18 @@ export type Line = 'xy' | 'diagonal';
 
 export type Board = (Piece | null)[][];
 
-export type Square<
-  Column extends number,
-  Row extends string
-> = `${Column}${Row}`;
+export type Square<File extends string, Rank extends number> = `${File}${Rank}`;
 
 export type Enumerate<
   N extends number,
   Acc extends number[] = []
+> = Acc['length'] extends N
+  ? Acc[number] & number
+  : Enumerate<N, [...Acc, Acc['length']]>;
+
+export type EnumerateFromOne<
+  N extends number,
+  Acc extends number[] = [N]
 > = Acc['length'] extends N
   ? Acc[number] & number
   : Enumerate<N, [...Acc, Acc['length']]>;

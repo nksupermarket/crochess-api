@@ -1,5 +1,12 @@
-import { Board, Colors, Line, PieceType, SquareIdx } from '../types/types';
-import { compare1dArr } from './misc';
+import {
+  Board,
+  Colors,
+  Line,
+  PieceMap,
+  PieceType,
+  SquareIdx
+} from '../types/types';
+import { check1dArrayEquality } from './misc';
 import { isSquareIdx } from './typeCheck';
 
 function getLineMoves<N extends number>({
@@ -149,7 +156,7 @@ export const getPawnMoves = <N extends number>(
   }).filter(
     (m) =>
       // check if it's the same as enpassant square
-      compare1dArr(m, enPassant || []) ||
+      check1dArrayEquality(m, enPassant || []) ||
       // check if there's a piece capture
       (board[m[0] as number][m[1] as number] &&
         board[m[0] as number][m[1] as number]?.color !== color)
@@ -157,3 +164,38 @@ export const getPawnMoves = <N extends number>(
 
   return regMoves.concat(captureMoves);
 };
+
+export function getValidKingMoves<S extends number>(
+  kingSquare: SquareIdx<S>,
+  oppColor: Colors,
+  oppPieceMap: PieceMap<S>,
+  board: Board
+) {
+  const kingMoves = getPieceMoves('king', board, kingSquare);
+
+  return kingMoves.filter(
+    (m) => !doesPieceHitSquare(board, square, oppPieceMap, oppColor)
+  );
+}
+
+function doesPieceHitSquare(
+  board: Board,
+  square: SquareIdx<typeof board.length>,
+  pieceMap: PieceMap<typeof board.length>,
+  color: Colors
+) {
+  for (const [type, pieceSquares] of Object.entries(pieceMap)) {
+    const pieceType = type as PieceType;
+    for (let i = 0; i < pieceSquares.length; i++) {
+      // for each piece check if their moves includes target
+      const moves =
+        pieceType === 'pawn'
+          ? getPawnMoves(board, color, square)
+          : getPieceMoves(pieceType, board, square);
+
+      if (moves.find((m) => check1dArrayEquality(m, square))) return true;
+    }
+  }
+
+  return false;
+}

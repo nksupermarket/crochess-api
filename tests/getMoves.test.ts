@@ -1,9 +1,9 @@
-import Gameboard from 'src/classes/Gameboard';
+import Gameboard from '../src/classes/Gameboard';
 import { BOARD_SIZE } from '../src/utils/constants';
 import { getPieceMoves, getPawnMoves } from '../src/utils/getMoves';
 import Piece from '../src/classes/Piece';
 
-describe.skip('getPieceMoves works', () => {
+describe('getPieceMoves works', () => {
   describe('bishop moves works', () => {
     it('works on an empty board', () => {
       const board = new Gameboard(BOARD_SIZE).board;

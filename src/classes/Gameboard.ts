@@ -5,14 +5,19 @@ import {
   PieceAbr,
   PieceMap,
   PieceType,
-  Enumerate
+  Enumerate,
+  Square,
+  Files,
+  EnumerateFromOne
 } from '../types/types';
 import Piece from './Piece';
 import {
   BOARD_SIZE,
   COLORS,
-  PIECE_ABR_MAP,
-  PIECE_TYPES
+  FILES,
+  ABR_TO_PIECE_MAP,
+  PIECE_TYPES,
+  PIECE_TO_ABR_MAP
 } from '../utils/constants';
 
 export default class Gameboard<Size extends number> {
@@ -49,16 +54,16 @@ export default class Gameboard<Size extends number> {
       'queen',
       'king',
       'bishop',
-      'bishop',
+      'knight',
       'rook'
     ] as const;
 
     for (let i = 0; i < initPositions.length; i++) {
-      this.board[i][0] = new Piece(initPositions[i], 'w');
-      this.board[i][1] = new Piece('pawn', 'w');
+      this.board[0][i] = new Piece(initPositions[i], 'w');
+      this.board[1][i] = new Piece('pawn', 'w');
 
-      this.board[i][this.board.length - 1] = new Piece(initPositions[i], 'b');
-      this.board[i][this.board.length - 2] = new Piece('pawn', 'b');
+      this.board[this.board.length - 1][i] = new Piece(initPositions[i], 'b');
+      this.board[this.board.length - 2][i] = new Piece('pawn', 'b');
     }
   }
 
@@ -70,61 +75,29 @@ export default class Gameboard<Size extends number> {
     this.pieceMap[color][pieceType].push(squareIdx);
   }
 
-  convertFromFen(
-    fen: string,
-    cb?: (
-      pieceType: PieceType,
-      color: Colors,
-      squareIdx: SquareIdx<Size>
-    ) => void
-  ): any {
-    const split = fen.split(' ');
-    const [board, activeColor, castleRights, enPassant, halfmoves, fullmoves] =
-      split;
-
-    // convert board
-    const splitIntoRanks = board.split('/');
-    const convertedBoard = splitIntoRanks.reduce<Board>((acc, curr, idx) => {
-      // iterate over the string representation of the rank
-      // for each character, adjust the rank accordingly
-
-      let rank: (Piece | null)[] = [];
-      for (let i = 0; i < curr.length; i++) {
-        if (Number(curr[i])) {
-          rank = rank.concat(Array(Number(curr[i])).fill(null));
-          continue;
-        }
-
-        if (curr[i].toLowerCase() === curr[i]) {
-          rank.push(new Piece(PIECE_ABR_MAP[curr[i] as PieceAbr], 'b'));
-          cb &&
-            cb(PIECE_ABR_MAP[curr[i] as PieceAbr], 'b', [
-              idx as Enumerate<Size>,
-              i as Enumerate<Size>
-            ]);
-        } else {
-          rank.push(
-            new Piece(PIECE_ABR_MAP[curr[i].toLowerCase() as PieceAbr], 'w')
-          );
-          cb &&
-            cb(PIECE_ABR_MAP[curr[i] as PieceAbr], 'w', [
-              idx as Enumerate<Size>,
-              i as Enumerate<Size>
-            ]);
-        }
-      }
-
-      acc.push(rank);
-      return acc;
-    }, [] as Board);
-
+  from(s1: Square<Files, EnumerateFromOne<Size>>, board = this.board) {
     return {
-      activeColor,
-      castleRights,
-      enPassant,
-      halfmoves,
-      fullmoves,
-      board: convertedBoard.reverse()
+      to: (s2: Square<Files, EnumerateFromOne<Size>>) => {
+        if (s1 === s2) return;
+
+        const fileAsIdx = {
+          s1: FILES.indexOf(s1[0] as Files),
+          s2: FILES.indexOf(s2[0] as Files)
+        };
+
+        const rankAsIdx = {
+          s1: Number(s1[1]) - 1,
+          s2: Number(s2[1]) - 1
+        };
+
+        const piece = board[rankAsIdx.s1][fileAsIdx.s1];
+        board[rankAsIdx.s1][fileAsIdx.s1] = null;
+        board[rankAsIdx.s2][fileAsIdx.s2] = piece;
+      }
     };
+  }
+
+  promote(piece: Piece, newType: Exclude<PieceType, 'pawn'>) {
+    piece.type = newType;
   }
 }

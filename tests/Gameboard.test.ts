@@ -43,25 +43,3 @@ test('initBoard works correctly', () => {
   expect(gameboard.board[6][6]).toEqual(new Piece('pawn', 'b'));
   expect(gameboard.board[6][7]).toEqual(new Piece('pawn', 'b'));
 });
-
-// describe('board is converted correctly', () => {
-//   const gameboard = new Gameboard(BOARD_SIZE);
-
-//   //   it('works for starting position', () => {
-//   //     expect(
-//   //       convertFromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-//   //         .board
-//   //     ).toEqual(board);
-//   //   });
-
-//   //   it('works when pieces are in the middle of the board', () => {
-//   //     board[3][4] = board[1][4];
-//   //     board[1][4] = null;
-
-//   //     expect(
-//   //       convertFromFen(
-//   //         'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
-//   //       ).board
-//   //     ).toEqual(board);
-//   //   });
-// });
