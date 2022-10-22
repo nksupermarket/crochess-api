@@ -1,5 +1,4 @@
-import Piece from '../classes/Piece';
-import { Board, Line, PieceType, SquareIdx } from '../types/types';
+import { Board, Colors, Line, PieceType, SquareIdx } from '../types/types';
 import { compare1dArr } from './misc';
 import { isSquareIdx } from './typeCheck';
 
@@ -16,7 +15,7 @@ function getLineMoves<N extends number>({
   start: SquareIdx<N>;
   range?: number;
   canCapture?: boolean;
-  onlyForward?: boolean;
+  onlyForward?: Colors;
 }) {
   let lines = {
     diagonal: [
@@ -34,9 +33,7 @@ function getLineMoves<N extends number>({
   }[dir];
 
   if (onlyForward) {
-    const piece = board[start[0] as number][start[1] as number] as Piece;
-    const forward = piece.color === 'white' ? 1 : -1;
-
+    const forward = onlyForward === 'w' ? 1 : -1;
     lines = lines.filter((l) => l[0] === forward);
   }
 
@@ -127,22 +124,19 @@ export const getPieceMoves = <N extends number>(
 
 export const getPawnMoves = <N extends number>(
   board: Board,
+  color: Colors,
   square: SquareIdx<N>,
   enPassant?: SquareIdx<N>
 ) => {
-  const startSquare = board[square[0] as number][square[1] as number];
-  if (!startSquare) return [];
-
   const firstMove =
-    (startSquare.color === 'white' && square[0] === 1) ||
-    (startSquare.color === 'black' && square[0] === 6);
+    (color === 'w' && square[0] === 1) || (color === 'b' && square[0] === 6);
 
   const regMoves = getLineMoves({
     board,
     start: square,
     dir: 'xy',
     range: firstMove ? 2 : 1,
-    onlyForward: true,
+    onlyForward: color,
     canCapture: false
   });
 
@@ -151,12 +145,14 @@ export const getPawnMoves = <N extends number>(
     start: square,
     dir: 'diagonal',
     range: 1,
-    onlyForward: true
+    onlyForward: color
   }).filter(
     (m) =>
+      // check if it's the same as enpassant square
       compare1dArr(m, enPassant || []) ||
+      // check if there's a piece capture
       (board[m[0] as number][m[1] as number] &&
-        board[m[0] as number][m[1] as number]?.color !== startSquare.color)
+        board[m[0] as number][m[1] as number]?.color !== color)
   );
 
   return regMoves.concat(captureMoves);

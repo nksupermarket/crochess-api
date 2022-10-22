@@ -21,10 +21,10 @@ export function convertFromFen(fen: string): any {
       }
 
       if (curr[i].toLowerCase() === curr[i]) {
-        rank.push(new Piece(PIECE_ABR_MAP[curr[i] as PieceAbr], 'black'));
+        rank.push(new Piece(PIECE_ABR_MAP[curr[i] as PieceAbr], 'b'));
       } else {
         rank.push(
-          new Piece(PIECE_ABR_MAP[curr[i].toLowerCase() as PieceAbr], 'white')
+          new Piece(PIECE_ABR_MAP[curr[i].toLowerCase() as PieceAbr], 'w')
         );
       }
     }

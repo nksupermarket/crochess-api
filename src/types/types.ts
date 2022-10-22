@@ -1,16 +1,11 @@
+import { COLORS, PIECE_TYPES } from 'src/utils/constants';
 import Piece from '../classes/Piece';
 
-export type PieceType =
-  | 'rook'
-  | 'knight'
-  | 'bishop'
-  | 'queen'
-  | 'king'
-  | 'pawn';
+export type PieceType = typeof PIECE_TYPES[number];
 
 export type PieceAbr = 'r' | 'k' | 'n' | 'b' | 'q' | 'p';
 
-export type Colors = 'white' | 'black';
+export type Colors = typeof COLORS[number];
 
 export type Tuple<
   T,
@@ -38,3 +33,5 @@ export type SquareIdx<BoardSize extends number> = Tuple<
   Enumerate<BoardSize>,
   2
 >;
+
+export type PieceMap<S extends number> = Record<PieceType, SquareIdx<S>[]>;
