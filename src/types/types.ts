@@ -9,15 +9,19 @@ export type Colors = typeof COLORS[number];
 
 export type Files = typeof FILES[number];
 
-export type Tuple<
-  T,
-  Len extends number,
-  R extends T[] = []
-> = R['length'] extends Len ? R : Tuple<T, Len, [T, ...R]>;
+export type Tuple<T, N extends number> = N extends N
+  ? number extends N
+    ? T[]
+    : _TupleOf<T, N, []>
+  : never;
+type _TupleOf<T, N extends number, R extends T[]> = R['length'] extends N
+  ? R
+  : _TupleOf<T, N, [T, ...R]>;
 
 export type Line = 'xy' | 'diagonal';
 
-export type Board = (Piece | null)[][];
+export type Rank<Len extends number> = Tuple<Piece | null, Len>;
+export type Board<Size extends number> = Tuple<Rank<Size>, Size>;
 
 export type Square<File extends string, Rank extends number> = `${File}${Rank}`;
 
@@ -40,4 +44,11 @@ export type SquareIdx<BoardSize extends number> = Tuple<
   2
 >;
 
+export type Permutations<
+  T extends string,
+  U extends string = T
+> = U extends string ? U | `${U}${Permutations<Exclude<T, U>>}` : never;
+
 export type PieceMap<S extends number> = Record<PieceType, SquareIdx<S>[]>;
+
+export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'>;

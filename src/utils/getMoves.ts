@@ -9,7 +9,7 @@ import {
 import { check1dArrayEquality } from './misc';
 import { isSquareIdx } from './typeCheck';
 
-function getLineMoves<N extends number>({
+function getLineMoves<S extends number>({
   dir,
   board,
   start,
@@ -18,8 +18,8 @@ function getLineMoves<N extends number>({
   onlyForward
 }: {
   dir: Line;
-  board: Board;
-  start: SquareIdx<N>;
+  board: Board<S>;
+  start: SquareIdx<S>;
   range?: number;
   canCapture?: boolean;
   onlyForward?: Colors;
@@ -44,7 +44,7 @@ function getLineMoves<N extends number>({
     lines = lines.filter((l) => l[0] === forward);
   }
 
-  const moves: SquareIdx<N>[] = [];
+  const moves: SquareIdx<S>[] = [];
   let move;
   lines.forEach((d) => {
     let rangeForLine = range;
@@ -76,10 +76,10 @@ function getLineMoves<N extends number>({
   return moves;
 }
 
-export const getPieceMoves = <N extends number>(
+export const getPieceMoves = <S extends number>(
   pieceType: Exclude<PieceType, 'pawn'>,
-  board: Board,
-  square: SquareIdx<N>
+  board: Board<S>,
+  square: SquareIdx<S>
 ) => {
   switch (pieceType) {
     case 'knight': {
@@ -129,11 +129,11 @@ export const getPieceMoves = <N extends number>(
   }
 };
 
-export const getPawnMoves = <N extends number>(
-  board: Board,
+export const getPawnMoves = <S extends number>(
+  board: Board<S>,
   color: Colors,
-  square: SquareIdx<N>,
-  enPassant?: SquareIdx<N>
+  square: SquareIdx<S>,
+  enPassant?: SquareIdx<S>
 ) => {
   const firstMove =
     (color === 'w' && square[0] === 1) || (color === 'b' && square[0] === 6);
@@ -169,19 +169,19 @@ export function getValidKingMoves<S extends number>(
   kingSquare: SquareIdx<S>,
   oppColor: Colors,
   oppPieceMap: PieceMap<S>,
-  board: Board
+  board: Board<S>
 ) {
   const kingMoves = getPieceMoves('king', board, kingSquare);
 
   return kingMoves.filter(
-    (m) => !doesPieceHitSquare(board, square, oppPieceMap, oppColor)
+    (m) => !doesPieceHitSquare(board, m, oppPieceMap, oppColor)
   );
 }
 
-function doesPieceHitSquare(
-  board: Board,
-  square: SquareIdx<typeof board.length>,
-  pieceMap: PieceMap<typeof board.length>,
+function doesPieceHitSquare<S extends number>(
+  board: Board<S>,
+  square: SquareIdx<S>,
+  pieceMap: PieceMap<S>,
   color: Colors
 ) {
   for (const [type, pieceSquares] of Object.entries(pieceMap)) {
