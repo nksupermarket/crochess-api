@@ -1,41 +1,39 @@
 import Castle from './Castle';
-import {
-  Board,
-  CastleRightsStr,
-  Colors,
-  Enumerate,
-  Files,
-  Square,
-  SquareIdx
-} from 'src/types/types';
+import { CastleRightsStr, Colors, EnPassant, SquareIdx } from 'src/types/types';
 import convertSquareToIdx from 'src/utils/convertSquareToIdx';
+import { isSquare } from 'src/utils/typeCheck';
+import Gameboard from './Gameboard';
 
-export default class GameState<S extends number> {
+export default class GameState<Size extends number> {
   castleRights: Castle;
-  board: Board<S>;
-  enPassant: SquareIdx<S>;
+  gameboard: Gameboard<Size>;
+  enPassant: SquareIdx<Size> | null;
   halfmoves: number;
   fullmoves: number;
   activeColor: Colors;
 
   constructor({
-    castleRightsStr,
-    board,
-    enPassant,
-    halfmoves,
-    fullmoves,
-    activeColor
+    boardSize,
+    castleRightsStr = 'KQkq',
+    gameboard = new Gameboard(boardSize),
+    enPassant = '-',
+    halfmoves = 0,
+    fullmoves = 0,
+    activeColor = 'w'
   }: {
+    boardSize: Size;
     castleRightsStr: CastleRightsStr;
-    board: Board<S>;
-    enPassant: Square<Files, Enumerate<S>>;
-    halfmoves: string;
-    fullmoves: string;
+    gameboard: Gameboard<Size>;
+    enPassant: EnPassant<Size>;
+    halfmoves: string | number;
+    fullmoves: string | number;
     activeColor: Colors;
   }) {
     this.castleRights = new Castle(castleRightsStr);
-    this.board = board;
-    this.enPassant = convertSquareToIdx(enPassant);
+    this.gameboard = gameboard;
+    this.enPassant = isSquare(boardSize, enPassant)
+      ? convertSquareToIdx(enPassant)
+      : null;
     this.halfmoves = Number(halfmoves);
     this.fullmoves = Number(fullmoves);
     this.activeColor = activeColor;

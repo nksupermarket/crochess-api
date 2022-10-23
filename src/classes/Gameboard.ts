@@ -12,14 +12,14 @@ import Piece from './Piece';
 import { BOARD_SIZE, COLORS, FILES, PIECE_TYPES } from '../utils/constants';
 import convertSquareToIdx from 'src/utils/convertSquareToIdx';
 import GameState from './GameState';
+import { isSquare } from 'src/utils/typeCheck';
 
 export default class Gameboard<Size extends number> {
-  state: GameState<Size>;
   board: Board<Size>;
   pieceMap: Record<Colors, PieceMap<Size>>;
 
-  constructor(size: Size) {
-    this.board = this.createBoard(size);
+  constructor(size: Size, board?: Board<Size>) {
+    this.board = board || this.create(size);
     this.pieceMap = (() => {
       return COLORS.reduce<Record<Colors, PieceMap<Size>>>((acc, curr) => {
         acc[curr] = PIECE_TYPES.reduce<PieceMap<Size>>((acc, curr) => {
@@ -32,14 +32,14 @@ export default class Gameboard<Size extends number> {
     })();
   }
 
-  createBoard(size: Size): Board<Size> {
+  create(size: Size): Board<Size> {
     return Array(size)
       .fill(null)
       .map(() => Array(size).fill(null)) as Board<Size>;
   }
 
-  initBoard() {
-    if (this.board.length !== BOARD_SIZE) return;
+  init(board: Board<Size>) {
+    if (board.length !== BOARD_SIZE) return;
 
     const initPositions = [
       'rook',
@@ -53,11 +53,11 @@ export default class Gameboard<Size extends number> {
     ] as const;
 
     for (let i = 0; i < initPositions.length; i++) {
-      this.board[0][i] = new Piece(initPositions[i], 'w');
-      this.board[1][i] = new Piece('pawn', 'w');
+      board[0][i] = new Piece(initPositions[i], 'w');
+      board[1][i] = new Piece('pawn', 'w');
 
-      this.board[this.board.length - 1][i] = new Piece(initPositions[i], 'b');
-      this.board[this.board.length - 2][i] = new Piece('pawn', 'b');
+      board[board.length - 1][i] = new Piece(initPositions[i], 'b');
+      board[board.length - 2][i] = new Piece('pawn', 'b');
     }
   }
 
@@ -70,6 +70,7 @@ export default class Gameboard<Size extends number> {
   }
 
   at(square: Square<Files, EnumerateFromOne<Size>>, board = this.board) {
+    if (!isSquare(board.length, square)) return;
     return {
       get piece() {
         const squareIdx = convertSquareToIdx(square);
@@ -89,8 +90,10 @@ export default class Gameboard<Size extends number> {
   }
 
   from(s1: Square<Files, EnumerateFromOne<Size>>, board = this.board) {
+    if (!isSquare(this.board.length, s1)) return;
     return {
       to: (s2: Square<Files, EnumerateFromOne<Size>>) => {
+        if (!isSquare(this.board.length, s2)) return;
         if (s1 === s2) return;
 
         const s1Idx = convertSquareToIdx(s1);

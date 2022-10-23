@@ -52,3 +52,5 @@ export type Permutations<
 export type PieceMap<S extends number> = Record<PieceType, SquareIdx<S>[]>;
 
 export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'>;
+
+export type EnPassant<S extends number> = Square<Files, Enumerate<S>> | '-';

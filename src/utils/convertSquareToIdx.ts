@@ -6,6 +6,6 @@ export default function convertSquareToIdx<S extends number>(
 ): SquareIdx<S> {
   return [
     FILES.indexOf(square[0] as Files),
-    Number(square[1]) - 1
+    Number(+square[1] - 1)
   ] as SquareIdx<S>;
 }

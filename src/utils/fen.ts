@@ -10,7 +10,8 @@ import {
   Enumerate,
   Square,
   Files,
-  CastleRightsStr
+  CastleRightsStr,
+  EnPassant
 } from '../types/types';
 import { ABR_TO_PIECE_MAP, PIECE_TO_ABR_MAP } from './constants';
 
@@ -65,7 +66,7 @@ export function convertFromFen<Size extends number>(
     fullmoves,
     board,
     castleRightsStr: castleRightsStr as CastleRightsStr,
-    enPassant: enPassant as Square<Files, Enumerate<Size>>
+    enPassant: enPassant as EnPassant<Size>
   });
 }
 
