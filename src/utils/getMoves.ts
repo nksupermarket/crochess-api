@@ -1,12 +1,19 @@
 import {
+  CastleRights,
   Board,
+  CastleSquares,
   Colors,
   Line,
   PieceMap,
   PieceType,
-  SquareIdx
+  SquareIdx,
+  Square,
+  Files,
+  Enumerate,
+  EnumerateFromOne
 } from '../types/types';
-import { check1dArrayEquality } from './misc';
+import { check1dArrayEquality, copy2dArray } from './misc';
+import { convertIdxToSquare } from './square';
 import { isSquareIdx } from './typeCheck';
 
 function getLineMoves<S extends number>({
@@ -45,14 +52,14 @@ function getLineMoves<S extends number>({
   }
 
   const moves: SquareIdx<S>[] = [];
-  let move;
+  let move: SquareIdx<S>;
   lines.forEach((d) => {
     let rangeForLine = range;
-    move = [start[0] + d[0], start[1] + d[1]];
+    move = [start[0] + d[0], start[1] + d[1]] as SquareIdx<S>;
     while (
       rangeForLine &&
       // move is a valid square on the board
-      isSquareIdx(board.length, move)
+      isSquareIdx<S>(board.length as S, move)
     ) {
       const square = board[move[0]][move[1]];
       if (square === null) {
@@ -68,7 +75,10 @@ function getLineMoves<S extends number>({
         break;
       }
 
-      move = [move[0] + d[0], move[1] + d[1]];
+      move = [
+        (move[0] + d[0]) as Enumerate<S>,
+        (move[1] + d[1]) as Enumerate<S>
+      ];
       rangeForLine--;
     }
   });
@@ -169,33 +179,57 @@ export function getValidKingMoves<S extends number>(
   kingSquare: SquareIdx<S>,
   oppColor: Colors,
   oppPieceMap: PieceMap<S>,
+  castleRights: CastleRights,
+  castleSquares: CastleSquares<S>,
   board: Board<S>
 ) {
-  const kingMoves = getPieceMoves('king', board, kingSquare);
+  if (!isSquareIdx(board.length, kingSquare)) return;
 
-  return kingMoves.filter(
-    (m) => !doesPieceHitSquare(board, m, oppPieceMap, oppColor)
-  );
+  // need to remove king because rooks/queens/bishops control the square behind the king as well
+  const copy = copy2dArray(board) as Board<S>;
+  copy[kingSquare[0] as number][kingSquare[1] as number] = null;
+
+  const kingMoves = getPieceMoves('king', board, kingSquare);
+  const allEnemyMoves = getAllMoves<S>(copy, oppPieceMap, oppColor);
+
+  // check if king can castle
+  for (const [side, canCastle] of Object.entries(castleRights)) {
+    if (!canCastle) continue;
+
+    if (
+      // castle squares are not empty or is under control by enemy piece
+      !castleSquares[side as 'kingside' | 'queenside'].every((s) => {
+        if (!isSquareIdx(board.length, s)) return false;
+
+        if (board[s[0]][s[1]] !== null) return false;
+
+        return !allEnemyMoves[convertIdxToSquare<S>(s)];
+      })
+    )
+      continue;
+
+    kingMoves.concat(castleSquares[side as 'kingside' | 'queenside'][1]);
+  }
+
+  return kingMoves.filter((s) => allEnemyMoves[convertIdxToSquare<S>(s)]);
 }
 
-function doesPieceHitSquare<S extends number>(
+function getAllMoves<S extends number>(
   board: Board<S>,
-  square: SquareIdx<S>,
   pieceMap: PieceMap<S>,
   color: Colors
-) {
+): Record<Square<Files, EnumerateFromOne<S>>, true> {
+  const allMoves = {} as Record<Square<Files, EnumerateFromOne<S>>, true>;
   for (const [type, pieceSquares] of Object.entries(pieceMap)) {
     const pieceType = type as PieceType;
     for (let i = 0; i < pieceSquares.length; i++) {
-      // for each piece check if their moves includes target
       const moves =
         pieceType === 'pawn'
-          ? getPawnMoves(board, color, square)
-          : getPieceMoves(pieceType, board, square);
+          ? getPawnMoves(board, color, pieceSquares[i])
+          : getPieceMoves(pieceType, board, pieceSquares[i]);
 
-      if (moves.find((m) => check1dArrayEquality(m, square))) return true;
+      moves.forEach((m) => (allMoves[convertIdxToSquare<S>(m)] = true));
     }
   }
-
-  return false;
+  return allMoves;
 }

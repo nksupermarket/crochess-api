@@ -10,8 +10,8 @@ import {
 } from '../types/types';
 import Piece from './Piece';
 import { BOARD_SIZE, COLORS, FILES, PIECE_TYPES } from '../utils/constants';
-import convertSquareToIdx from 'src/utils/convertSquareToIdx';
-import GameState from './GameState';
+import { convertSquareToIdx } from 'src/utils/square';
+import Game from './Game';
 import { isSquare } from 'src/utils/typeCheck';
 
 export default class Gameboard<Size extends number> {
@@ -28,7 +28,7 @@ export default class Gameboard<Size extends number> {
         }, {} as PieceMap<Size>);
 
         return acc;
-      }, {});
+      }, {} as Record<Colors, PieceMap<Size>>);
     })();
   }
 
@@ -38,7 +38,7 @@ export default class Gameboard<Size extends number> {
       .map(() => Array(size).fill(null)) as Board<Size>;
   }
 
-  init(board: Board<Size>) {
+  init(board = this.board) {
     if (board.length !== BOARD_SIZE) return;
 
     const initPositions = [

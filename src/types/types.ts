@@ -25,19 +25,25 @@ export type Board<Size extends number> = Tuple<Rank<Size>, Size>;
 
 export type Square<File extends string, Rank extends number> = `${File}${Rank}`;
 
-export type Enumerate<
+export type Enumerate<N extends number> = N extends 0
+  ? never
+  : number extends N
+  ? number
+  : _EnumerateFrom<N>;
+
+export type _EnumerateFrom<
   N extends number,
   Acc extends number[] = []
 > = Acc['length'] extends N
   ? Acc[number] & number
-  : Enumerate<N, [...Acc, Acc['length']]>;
+  : _EnumerateFrom<N, [...Acc, Acc['length']]>;
 
 export type EnumerateFromOne<
   N extends number,
   Acc extends number[] = [N]
 > = Acc['length'] extends N
   ? Acc[number] & number
-  : Enumerate<N, [...Acc, Acc['length']]>;
+  : _EnumerateFrom<N, [...Acc, Acc['length']]>;
 
 export type SquareIdx<BoardSize extends number> = Tuple<
   Enumerate<BoardSize>,
@@ -54,3 +60,10 @@ export type PieceMap<S extends number> = Record<PieceType, SquareIdx<S>[]>;
 export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'>;
 
 export type EnPassant<S extends number> = Square<Files, Enumerate<S>> | '-';
+
+export type CastleRights = Record<'kingside' | 'queenside', boolean>;
+
+export type CastleSquares<S extends number> = Record<
+  'kingside' | 'queenside',
+  SquareIdx<S>[]
+>;

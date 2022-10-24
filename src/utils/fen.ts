@@ -1,4 +1,5 @@
-import GameState from 'src/classes/GameState';
+import Gameboard from 'src/classes/Gameboard';
+import Game from 'src/classes/Game';
 import Piece from '../classes/Piece';
 import {
   Board,
@@ -8,17 +9,18 @@ import {
   PieceAbr,
   PieceType,
   Enumerate,
-  Square,
-  Files,
   CastleRightsStr,
   EnPassant
 } from '../types/types';
 import { ABR_TO_PIECE_MAP, PIECE_TO_ABR_MAP } from './constants';
+import { isFenStr } from './typeCheck';
 
 export function convertFromFen<Size extends number>(
   fen: string,
   cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx<Size>) => void
 ): any {
+  if (!isFenStr(fen)) return;
+
   const split = fen.split(' ');
   const [
     boardStr,
@@ -60,13 +62,14 @@ export function convertFromFen<Size extends number>(
       return acc;
     }, [] as Board<Size>);
 
-  return new GameState<Size>({
-    activeColor,
+  return new Game<typeof board.length>({
     halfmoves,
     fullmoves,
-    board,
+    boardSize: board.length,
+    gameboard: new Gameboard(board.length, board),
     castleRightsStr: castleRightsStr as CastleRightsStr,
-    enPassant: enPassant as EnPassant<Size>
+    enPassant: enPassant as EnPassant<typeof board.length>,
+    activeColor: activeColor as Colors
   });
 }
 

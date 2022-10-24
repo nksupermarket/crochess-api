@@ -1,5 +1,3 @@
-import { PieceAbr, PieceType } from '../types/types';
-
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 export const FILES = [
@@ -40,7 +38,7 @@ export const PIECE_TYPES = [
   'pawn'
 ] as const;
 
-export const COLORS = ['w', 'b'];
+export const COLORS = ['w', 'b'] as const;
 
 export const BOARD_SIZE = 8;
 
