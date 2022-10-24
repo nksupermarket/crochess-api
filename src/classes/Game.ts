@@ -1,13 +1,18 @@
-import { CastleRights } from 'src/types/interface';
-import { CastleRightsStr, Colors, EnPassant, SquareIdx } from 'src/types/types';
-import convertSquareToIdx from 'src/utils/convertSquareToIdx';
-import { isSquare } from 'src/utils/typeCheck';
+import {
+  Board,
+  CastleRights,
+  CastleRightsStr,
+  Colors,
+  EnPassant,
+  SquareIdx
+} from '../types/types';
+import { convertSquareToIdx } from '../utils/square';
+import { isSquare } from '../utils/typeCheck';
 import Gameboard from './Gameboard';
-import { COLORS } from 'src/utils/constants';
+import { COLORS } from '../utils/constants';
 
-export default class Game<Size extends number> {
+export default class Game<Size extends number> extends Gameboard<Size> {
   castleRights: Record<Colors, CastleRights>;
-  gameboard: Gameboard<Size>;
   enPassant: SquareIdx<Size> | null;
   halfmoves: number;
   fullmoves: number;
@@ -16,7 +21,7 @@ export default class Game<Size extends number> {
   constructor({
     boardSize,
     castleRightsStr = 'KQkq',
-    gameboard = new Gameboard(boardSize),
+    board,
     enPassant,
     halfmoves = 0,
     fullmoves = 0,
@@ -24,12 +29,13 @@ export default class Game<Size extends number> {
   }: {
     boardSize: Size;
     castleRightsStr: CastleRightsStr;
-    gameboard: Gameboard<Size>;
     enPassant: EnPassant<Size>;
     halfmoves: string | number;
     fullmoves: string | number;
     activeColor: Colors;
+    board?: Board<Size>;
   }) {
+    super(boardSize, board && board);
     this.castleRights = COLORS.reduce<Record<Colors, CastleRights>>(
       (acc, curr) => {
         const kingsideStr = curr === 'w' ? 'K' : 'k';
@@ -43,14 +49,11 @@ export default class Game<Size extends number> {
       },
       {} as Record<Colors, CastleRights>
     );
-    this.gameboard = gameboard;
-    this.enPassant = isSquare(boardSize, enPassant)
-      ? convertSquareToIdx(enPassant)
+    this.enPassant = isSquare(boardSize as Size, enPassant)
+      ? convertSquareToIdx(enPassant, boardSize as Size)
       : null;
     this.halfmoves = Number(halfmoves);
     this.fullmoves = Number(fullmoves);
     this.activeColor = activeColor;
   }
-
-  makeMove() {}
 }

@@ -1,11 +1,16 @@
-import { COLORS, FILES, PIECE_TYPES } from 'src/utils/constants';
-import Piece from '../classes/Piece';
+import {
+  COLORS,
+  FILES,
+  PIECE_TYPES,
+  POINT_TO_PIECE_MAP,
+  PIECE_TO_POINT_MAP
+} from 'src/utils/constants';
 
 export type PieceType = typeof PIECE_TYPES[number];
 
-export type PieceAbr = 'r' | 'k' | 'n' | 'b' | 'q' | 'p';
-
 export type Colors = typeof COLORS[number];
+
+export type Piece = `${Colors}${PieceType}`;
 
 export type Files = typeof FILES[number];
 
@@ -20,9 +25,10 @@ type _TupleOf<T, N extends number, R extends T[]> = R['length'] extends N
 
 export type Line = 'xy' | 'diagonal';
 
-export type Rank<Len extends number> = Tuple<Piece | null, Len>;
-export type Board<Size extends number> = Tuple<Rank<Size>, Size>;
+export type PieceAsPoint =
+  typeof PIECE_TO_POINT_MAP[keyof typeof PIECE_TO_POINT_MAP];
 
+export type Board<Size extends number> = Tuple<Piece | null, Size>;
 export type Square<File extends string, Rank extends number> = `${File}${Rank}`;
 
 export type Enumerate<N extends number> = N extends 0
@@ -45,10 +51,7 @@ export type EnumerateFromOne<
   ? Acc[number] & number
   : _EnumerateFrom<N, [...Acc, Acc['length']]>;
 
-export type SquareIdx<BoardSize extends number> = Tuple<
-  Enumerate<BoardSize>,
-  2
->;
+export type SquareIdx<N extends number> = Enumerate<N>;
 
 export type Permutations<
   T extends string,
@@ -65,5 +68,9 @@ export type CastleRights = Record<'kingside' | 'queenside', boolean>;
 
 export type CastleSquares<S extends number> = Record<
   'kingside' | 'queenside',
-  SquareIdx<S>[]
+  Enumerate<S>[]
 >;
+
+export type NumberLiteral<N extends Exclude<number, N>> = N;
+
+export type FenStr = string;

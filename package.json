@@ -9,7 +9,7 @@
   "private": false,
   "jest": {
     "preset": "ts-jest/presets/js-with-babel",
-    "testEnvironment": "jsdom",
+    "testEnvironment": "node",
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },

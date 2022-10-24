@@ -6,14 +6,9 @@ import {
   Line,
   PieceMap,
   PieceType,
-  SquareIdx,
-  Square,
-  Files,
-  Enumerate,
-  EnumerateFromOne
+  SquareIdx
 } from '../types/types';
-import { check1dArrayEquality, copy2dArray } from './misc';
-import { convertIdxToSquare } from './square';
+
 import { isSquareIdx } from './typeCheck';
 
 function getLineMoves<S extends number>({
@@ -30,44 +25,35 @@ function getLineMoves<S extends number>({
   range?: number;
   canCapture?: boolean;
   onlyForward?: Colors;
-}) {
+}): SquareIdx<S>[] {
+  const length = Math.sqrt(board.length);
   let lines = {
-    diagonal: [
-      [1, 1],
-      [1, -1],
-      [-1, 1],
-      [-1, -1]
-    ],
-    xy: [
-      [0, 1],
-      [0, -1],
-      [1, 0],
-      [-1, 0]
-    ]
+    diagonal: [length + 1, length - 1, -length + 1, -length - 1],
+    xy: [1, -1, length, -length]
   }[dir];
 
   if (onlyForward) {
-    const forward = onlyForward === 'w' ? 1 : -1;
-    lines = lines.filter((l) => l[0] === forward);
+    const forward = onlyForward === 'w' ? length : -length;
+    lines = lines.filter((l) => l + 2 > forward && l - 2 < forward);
   }
 
   const moves: SquareIdx<S>[] = [];
-  let move: SquareIdx<S>;
   lines.forEach((d) => {
     let rangeForLine = range;
-    move = [start[0] + d[0], start[1] + d[1]] as SquareIdx<S>;
+    // can assume move is type SquareIdx because the while loops checks for it anyways
+    let move = start + d;
     while (
       rangeForLine &&
       // move is a valid square on the board
-      isSquareIdx<S>(board.length as S, move)
+      isSquareIdx(board.length as S, move)
     ) {
-      const square = board[move[0]][move[1]];
-      if (square === null) {
+      const piece = board[move];
+      if (!piece) {
         moves.push(move);
       } else if (
         canCapture &&
         // square has piece that isn't same color as piece moving
-        square.color !== board[start[0] as number][start[1] as number]?.color
+        piece[0] !== board[start]?.[0]
       ) {
         moves.push(move);
         break;
@@ -75,10 +61,7 @@ function getLineMoves<S extends number>({
         break;
       }
 
-      move = [
-        (move[0] + d[0]) as Enumerate<S>,
-        (move[1] + d[1]) as Enumerate<S>
-      ];
+      move = move + d;
       rangeForLine--;
     }
   });
@@ -87,45 +70,46 @@ function getLineMoves<S extends number>({
 }
 
 export const getPieceMoves = <S extends number>(
-  pieceType: Exclude<PieceType, 'pawn'>,
+  pieceType: Exclude<PieceType, 'p' | 'P'>,
   board: Board<S>,
   square: SquareIdx<S>
-) => {
+): SquareIdx<S>[] => {
   switch (pieceType) {
-    case 'knight': {
-      const knightJumps = [
-        [1, 2],
-        [1, -2],
-        [-1, 2],
-        [-1, -2],
-        [2, 1],
-        [2, -1],
-        [-2, 1],
-        [-2, -1]
+    case 'n': {
+      const length = Math.sqrt(board.length);
+      const jumps = [
+        -2 * length + 1,
+        -2 * length - 1,
+        2 * length - 1,
+        2 * length + 1,
+        length + 2,
+        length - 2,
+        -length + 2,
+        -length - 2
       ] as const;
 
-      return knightJumps.reduce((acc, curr) => {
-        const move = [square[0] + curr[0], square[1] + curr[1]];
-        if (isSquareIdx(board.length, move)) acc.push(move);
+      return jumps.reduce((acc, curr) => {
+        const move = square + curr;
+        if (isSquareIdx(board.length as S, move)) acc.push(move);
         return acc;
-      }, [] as SquareIdx<typeof board.length>[]);
+      }, [] as SquareIdx<S>[]);
     }
 
-    case 'bishop': {
+    case 'b': {
       return getLineMoves({ board, dir: 'diagonal', start: square });
     }
 
-    case 'rook': {
+    case 'r': {
       return getLineMoves({ board, dir: 'xy', start: square });
     }
 
-    case 'queen': {
+    case 'q': {
       return getLineMoves({ board, dir: 'diagonal', start: square }).concat(
         getLineMoves({ board, dir: 'xy', start: square })
       );
     }
 
-    case 'king': {
+    case 'k': {
       return getLineMoves({
         board,
         dir: 'diagonal',
@@ -145,8 +129,9 @@ export const getPawnMoves = <S extends number>(
   square: SquareIdx<S>,
   enPassant?: SquareIdx<S>
 ) => {
+  const rank = Math.floor(square / Math.sqrt(board.length)) + 1;
   const firstMove =
-    (color === 'w' && square[0] === 1) || (color === 'b' && square[0] === 6);
+    (color === 'w' && rank === 2) || (color === 'b' && rank === 7);
 
   const regMoves = getLineMoves({
     board,
@@ -163,14 +148,15 @@ export const getPawnMoves = <S extends number>(
     dir: 'diagonal',
     range: 1,
     onlyForward: color
-  }).filter(
-    (m) =>
-      // check if it's the same as enpassant square
-      check1dArrayEquality(m, enPassant || []) ||
+  }).filter((m) => {
+    const piece = board[m];
+    // check if it's the same as enpassant square
+    return (
+      m === enPassant ||
       // check if there's a piece capture
-      (board[m[0] as number][m[1] as number] &&
-        board[m[0] as number][m[1] as number]?.color !== color)
-  );
+      (piece && piece[0] !== color)
+    );
+  });
 
   return regMoves.concat(captureMoves);
 };
@@ -186,10 +172,10 @@ export function getValidKingMoves<S extends number>(
   if (!isSquareIdx(board.length, kingSquare)) return;
 
   // need to remove king because rooks/queens/bishops control the square behind the king as well
-  const copy = copy2dArray(board) as Board<S>;
-  copy[kingSquare[0] as number][kingSquare[1] as number] = null;
+  const copy = [...board] as Board<S>;
+  copy[kingSquare] = null;
 
-  const kingMoves = getPieceMoves('king', board, kingSquare);
+  const kingMoves = getPieceMoves('k', board, kingSquare);
   const allEnemyMoves = getAllMoves<S>(copy, oppPieceMap, oppColor);
 
   // check if king can castle
@@ -200,10 +186,8 @@ export function getValidKingMoves<S extends number>(
       // castle squares are not empty or is under control by enemy piece
       !castleSquares[side as 'kingside' | 'queenside'].every((s) => {
         if (!isSquareIdx(board.length, s)) return false;
-
-        if (board[s[0]][s[1]] !== null) return false;
-
-        return !allEnemyMoves[convertIdxToSquare<S>(s)];
+        if (board[s] !== null) return false;
+        return !allEnemyMoves[s];
       })
     )
       continue;
@@ -211,24 +195,24 @@ export function getValidKingMoves<S extends number>(
     kingMoves.concat(castleSquares[side as 'kingside' | 'queenside'][1]);
   }
 
-  return kingMoves.filter((s) => allEnemyMoves[convertIdxToSquare<S>(s)]);
+  return kingMoves.filter((s) => allEnemyMoves[s]);
 }
 
 function getAllMoves<S extends number>(
   board: Board<S>,
   pieceMap: PieceMap<S>,
   color: Colors
-): Record<Square<Files, EnumerateFromOne<S>>, true> {
-  const allMoves = {} as Record<Square<Files, EnumerateFromOne<S>>, true>;
+): Record<SquareIdx<S>, true> {
+  const allMoves = {} as Record<SquareIdx<S>, true>;
   for (const [type, pieceSquares] of Object.entries(pieceMap)) {
     const pieceType = type as PieceType;
     for (let i = 0; i < pieceSquares.length; i++) {
       const moves =
-        pieceType === 'pawn'
+        pieceType === 'p'
           ? getPawnMoves(board, color, pieceSquares[i])
           : getPieceMoves(pieceType, board, pieceSquares[i]);
 
-      moves.forEach((m) => (allMoves[convertIdxToSquare<S>(m)] = true));
+      moves.forEach((m) => (allMoves[m] = true));
     }
   }
   return allMoves;

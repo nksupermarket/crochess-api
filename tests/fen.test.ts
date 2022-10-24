@@ -1,4 +1,3 @@
-import { Files, Square } from 'src/types/types';
 import Gameboard from '../src/classes/Gameboard';
 import { BOARD_SIZE } from '../src/utils/constants';
 import { convertFromFen, convertToFen } from '../src/utils/fen';
