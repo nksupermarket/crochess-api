@@ -1,356 +1,285 @@
-// import Gameboard from '../src/classes/Gameboard';
-// import { BOARD_SIZE } from '../src/utils/constants';
-// import { getPieceMoves, getPawnMoves } from '../src/utils/getMoves';
+import Gameboard from '../src/classes/Gameboard';
+import { BOARD_SIZE } from '../src/utils/constants';
+import { getPieceMoves, getPawnMoves } from '../src/utils/getMoves';
 
-// describe('getPieceMoves works', () => {
-//   describe('bishop moves works', () => {
-//     it('works on an empty board', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('bishop', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [0, 0],
-//           [1, 1],
-//           [2, 2],
-//           [3, 3],
-//           [5, 5],
-//           [6, 6],
-//           [7, 7],
-//           [7, 1],
-//           [6, 2],
-//           [5, 3],
-//           [3, 5],
-//           [2, 6],
-//           [1, 7]
-//         ].sort()
-//       );
-//     });
+// wrote this function because I changed the board implementation from a 2d array to a 1d array. Instead of manually converting each expected array I wrote this function instead
+function convertArrToIdx(arr: number[][]) {
+  return arr.map((v) => {
+    const [rank, file] = v;
+    return rank * 8 + file;
+  });
+}
 
-//     it('works when a piece of the same color is blocking', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       board[4][4] = new Piece('bishop', 'w');
-//       board[5][5] = new Piece('pawn', 'w');
+describe('getPieceMoves works', () => {
+  describe('bishop moves works', () => {
+    it('works on an empty board', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      expect(getPieceMoves<typeof BOARD_SIZE>('b', board, 36).sort()).toEqual(
+        [0, 9, 18, 27, 45, 54, 63, 57, 50, 43, 29, 22, 15].sort()
+      );
+    });
 
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('bishop', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [0, 0],
-//           [1, 1],
-//           [2, 2],
-//           [3, 3],
-//           [7, 1],
-//           [6, 2],
-//           [5, 3],
-//           [3, 5],
-//           [2, 6],
-//           [1, 7]
-//         ].sort()
-//       );
-//     });
+    it('works when a piece of the same color is blocking', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      board[36] = 'wb';
+      board[45] = 'wp';
 
-//     it('works when a piece of the opposite color is blocking', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       board[4][4] = new Piece('bishop', 'w');
-//       board[3][3] = new Piece('knight', 'b');
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('bishop', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [3, 3],
-//           [5, 5],
-//           [6, 6],
-//           [7, 7],
-//           [7, 1],
-//           [6, 2],
-//           [5, 3],
-//           [3, 5],
-//           [2, 6],
-//           [1, 7]
-//         ].sort()
-//       );
-//     });
+      expect(getPieceMoves<typeof BOARD_SIZE>('b', board, 36).sort()).toEqual(
+        [0, 9, 18, 27, 57, 50, 43, 29, 22, 15].sort()
+      );
+    });
 
-//     it('works when pieces of both colors block at the same time', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       board[4][4] = new Piece('bishop', 'w');
-//       board[3][3] = new Piece('knight', 'b');
-//       board[5][5] = new Piece('pawn', 'w');
+    it('works when a piece of the opposite color is blocking', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      board[36] = 'wb';
+      board[27] = 'bn';
+      expect(getPieceMoves<typeof BOARD_SIZE>('b', board, 36).sort()).toEqual(
+        [27, 45, 54, 63, 57, 50, 43, 29, 22, 15].sort()
+      );
+    });
 
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('bishop', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [3, 3],
-//           [7, 1],
-//           [6, 2],
-//           [5, 3],
-//           [3, 5],
-//           [2, 6],
-//           [1, 7]
-//         ].sort()
-//       );
-//     });
-//   });
+    it('works when pieces of both colors block at the same time', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      board[36] = 'wb';
+      board[27] = 'bn';
+      board[45] = 'wp';
 
-//   describe('knight moves works', () => {
-//     const board = new Gameboard(BOARD_SIZE).board;
+      expect(getPieceMoves<typeof BOARD_SIZE>('b', board, 36).sort()).toEqual(
+        [27, 57, 50, 43, 29, 22, 15].sort()
+      );
+    });
+  });
 
-//     expect(
-//       getPieceMoves<typeof BOARD_SIZE>('knight', board, [4, 3]).sort()
-//     ).toEqual(
-//       [
-//         [2, 2],
-//         [2, 4],
-//         [3, 1],
-//         [3, 5],
-//         [5, 5],
-//         [5, 1],
-//         [6, 2],
-//         [6, 4]
-//       ].sort()
-//     );
-//   });
+  describe('knight moves works', () => {
+    const board = new Gameboard(BOARD_SIZE).board;
 
-//   describe('rook moves works', () => {
-//     it('works on an empty board', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('rook', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [3, 4],
-//           [2, 4],
-//           [1, 4],
-//           [0, 4],
-//           [5, 4],
-//           [6, 4],
-//           [7, 4],
-//           [4, 3],
-//           [4, 2],
-//           [4, 1],
-//           [4, 0],
-//           [4, 5],
-//           [4, 6],
-//           [4, 7]
-//         ].sort()
-//       );
-//     });
+    expect(getPieceMoves<typeof BOARD_SIZE>('n', board, 35).sort()).toEqual(
+      [18, 20, 25, 29, 45, 41, 50, 52].sort()
+    );
+  });
 
-//     it('works when a piece of the same color is blocking', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       board[4][4] = new Piece('rook', 'w');
-//       board[5][4] = new Piece('pawn', 'w');
+  describe('rook moves works', () => {
+    it('works on an empty board', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      expect(getPieceMoves<typeof BOARD_SIZE>('r', board, 36).sort()).toEqual(
+        convertArrToIdx([
+          [3, 4],
+          [2, 4],
+          [1, 4],
+          [0, 4],
+          [5, 4],
+          [6, 4],
+          [7, 4],
+          [4, 3],
+          [4, 2],
+          [4, 1],
+          [4, 0],
+          [4, 5],
+          [4, 6],
+          [4, 7]
+        ]).sort()
+      );
+    });
 
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('rook', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [3, 4],
-//           [2, 4],
-//           [1, 4],
-//           [0, 4],
-//           [4, 3],
-//           [4, 2],
-//           [4, 1],
-//           [4, 0],
-//           [4, 5],
-//           [4, 6],
-//           [4, 7]
-//         ].sort()
-//       );
-//     });
+    it('works when a piece of the same color is blocking', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      board[36] = 'wr';
+      board[44] = 'wp';
 
-//     it('works when a piece of the opposite color is blocking', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       board[4][4] = new Piece('rook', 'w');
-//       board[4][3] = new Piece('knight', 'b');
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('rook', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [3, 4],
-//           [2, 4],
-//           [1, 4],
-//           [0, 4],
-//           [5, 4],
-//           [6, 4],
-//           [7, 4],
-//           [4, 3],
-//           [4, 5],
-//           [4, 6],
-//           [4, 7]
-//         ].sort()
-//       );
-//     });
+      expect(getPieceMoves<typeof BOARD_SIZE>('r', board, 36).sort()).toEqual(
+        convertArrToIdx([
+          [3, 4],
+          [2, 4],
+          [1, 4],
+          [0, 4],
+          [4, 3],
+          [4, 2],
+          [4, 1],
+          [4, 0],
+          [4, 5],
+          [4, 6],
+          [4, 7]
+        ]).sort()
+      );
+    });
 
-//     it('works when pieces of both colors block at the same time', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
-//       board[4][4] = new Piece('rook', 'w');
-//       board[4][3] = new Piece('knight', 'b');
-//       board[5][4] = new Piece('pawn', 'w');
+    it('works when a piece of the opposite color is blocking', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      board[36] = 'wr';
+      board[35] = 'bn';
+      expect(getPieceMoves<typeof BOARD_SIZE>('r', board, 36).sort()).toEqual(
+        convertArrToIdx([
+          [3, 4],
+          [2, 4],
+          [1, 4],
+          [0, 4],
+          [5, 4],
+          [6, 4],
+          [7, 4],
+          [4, 3],
+          [4, 5],
+          [4, 6],
+          [4, 7]
+        ]).sort()
+      );
+    });
 
-//       expect(
-//         getPieceMoves<typeof BOARD_SIZE>('rook', board, [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [3, 4],
-//           [2, 4],
-//           [1, 4],
-//           [0, 4],
-//           [4, 3],
-//           [4, 5],
-//           [4, 6],
-//           [4, 7]
-//         ].sort()
-//       );
-//     });
-//   });
+    it('works when pieces of both colors block at the same time', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
+      board[36] = 'wr';
+      board[35] = 'bn';
+      board[44] = 'wp';
 
-//   test('queen moves works', () => {
-//     const board = new Gameboard(BOARD_SIZE).board;
-//     expect(
-//       getPieceMoves<typeof BOARD_SIZE>('queen', board, [4, 4]).sort()
-//     ).toEqual(
-//       [
-//         [3, 4],
-//         [2, 4],
-//         [1, 4],
-//         [0, 4],
-//         [5, 4],
-//         [6, 4],
-//         [7, 4],
-//         [4, 3],
-//         [4, 2],
-//         [4, 1],
-//         [4, 0],
-//         [4, 5],
-//         [4, 6],
-//         [4, 7],
-//         [0, 0],
-//         [1, 1],
-//         [2, 2],
-//         [3, 3],
-//         [5, 5],
-//         [6, 6],
-//         [7, 7],
-//         [7, 1],
-//         [6, 2],
-//         [5, 3],
-//         [3, 5],
-//         [2, 6],
-//         [1, 7]
-//       ].sort()
-//     );
-//   });
+      expect(getPieceMoves<typeof BOARD_SIZE>('r', board, 36).sort()).toEqual(
+        convertArrToIdx([
+          [3, 4],
+          [2, 4],
+          [1, 4],
+          [0, 4],
+          [4, 3],
+          [4, 5],
+          [4, 6],
+          [4, 7]
+        ]).sort()
+      );
+    });
+  });
 
-//   test('king moves works', () => {
-//     const board = new Gameboard(BOARD_SIZE).board;
-//     expect(
-//       getPieceMoves<typeof BOARD_SIZE>('king', board, [4, 4]).sort()
-//     ).toEqual(
-//       [
-//         [3, 3],
-//         [5, 5],
-//         [4, 3],
-//         [4, 5],
-//         [3, 4],
-//         [3, 5],
-//         [5, 3],
-//         [5, 4]
-//       ].sort()
-//     );
-//   });
-// });
+  test('queen moves works', () => {
+    const board = new Gameboard(BOARD_SIZE).board;
+    expect(getPieceMoves<typeof BOARD_SIZE>('q', board, 36).sort()).toEqual(
+      convertArrToIdx([
+        [3, 4],
+        [2, 4],
+        [1, 4],
+        [0, 4],
+        [5, 4],
+        [6, 4],
+        [7, 4],
+        [4, 3],
+        [4, 2],
+        [4, 1],
+        [4, 0],
+        [4, 5],
+        [4, 6],
+        [4, 7],
+        [0, 0],
+        [1, 1],
+        [2, 2],
+        [3, 3],
+        [5, 5],
+        [6, 6],
+        [7, 7],
+        [7, 1],
+        [6, 2],
+        [5, 3],
+        [3, 5],
+        [2, 6],
+        [1, 7]
+      ]).sort()
+    );
+  });
 
-// describe('getPawnMoves works', () => {
-//   const board = new Gameboard(BOARD_SIZE).board;
+  test('king moves works', () => {
+    const board = new Gameboard(BOARD_SIZE).board;
+    expect(getPieceMoves<typeof BOARD_SIZE>('k', board, 36).sort()).toEqual(
+      convertArrToIdx([
+        [3, 3],
+        [5, 5],
+        [4, 3],
+        [4, 5],
+        [3, 4],
+        [3, 5],
+        [5, 3],
+        [5, 4]
+      ]).sort()
+    );
+  });
+});
 
-//   it('works on an empty board', () => {
-//     expect(getPawnMoves<typeof BOARD_SIZE>(board, 'w', [4, 4]).sort()).toEqual([
-//       [5, 4]
-//     ]);
-//   });
+describe('getPawnMoves works', () => {
+  const board = new Gameboard(BOARD_SIZE).board;
 
-//   it('works when pawn is on start square', () => {
-//     expect(getPawnMoves<typeof BOARD_SIZE>(board, 'w', [1, 4]).sort()).toEqual(
-//       [
-//         [3, 4],
-//         [2, 4]
-//       ].sort()
-//     );
+  it('works on an empty board', () => {
+    expect(getPawnMoves<typeof BOARD_SIZE>(board, 'w', 36).sort()).toEqual(
+      convertArrToIdx([[5, 4]])
+    );
+  });
 
-//     expect(getPawnMoves<typeof BOARD_SIZE>(board, 'b', [6, 4]).sort()).toEqual(
-//       [
-//         [5, 4],
-//         [4, 4]
-//       ].sort()
-//     );
-//   });
+  it('works when pawn is on start square', () => {
+    expect(getPawnMoves<typeof BOARD_SIZE>(board, 'w', 12).sort()).toEqual(
+      convertArrToIdx([
+        [3, 4],
+        [2, 4]
+      ]).sort()
+    );
 
-//   describe('it works with captures', () => {
-//     it('works', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
+    expect(getPawnMoves<typeof BOARD_SIZE>(board, 'b', 52).sort()).toEqual(
+      convertArrToIdx([
+        [5, 4],
+        [4, 4]
+      ]).sort()
+    );
+  });
 
-//       board[5][5] = new Piece('pawn', 'b');
-//       board[5][3] = new Piece('pawn', 'b');
-//       expect(
-//         getPawnMoves<typeof BOARD_SIZE>(board, 'w', [4, 4]).sort()
-//       ).toEqual(
-//         [
-//           [5, 4],
-//           [5, 5],
-//           [5, 3]
-//         ].sort()
-//       );
+  describe('it works with captures', () => {
+    it('works', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
 
-//       board[4][3] = new Piece('pawn', 'w');
-//       board[4][1] = new Piece('pawn', 'w');
+      board[45] = 'bp';
+      board[43] = 'bp';
+      expect(getPawnMoves<typeof BOARD_SIZE>(board, 'w', 36).sort()).toEqual(
+        convertArrToIdx([
+          [5, 4],
+          [5, 5],
+          [5, 3]
+        ]).sort()
+      );
 
-//       expect(
-//         getPawnMoves<typeof BOARD_SIZE>(board, 'b', [5, 2]).sort()
-//       ).toEqual(
-//         [
-//           [4, 2],
-//           [4, 3],
-//           [4, 1]
-//         ].sort()
-//       );
-//     });
+      board[35] = 'wp';
+      board[33] = 'wp';
 
-//     it('doesnt include own pieces', () => {
-//       const board = new Gameboard(BOARD_SIZE).board;
+      expect(getPawnMoves<typeof BOARD_SIZE>(board, 'b', 42).sort()).toEqual(
+        convertArrToIdx([
+          [4, 2],
+          [4, 3],
+          [4, 1]
+        ]).sort()
+      );
+    });
 
-//       board[5][5] = new Piece('pawn', 'w');
-//       board[5][3] = new Piece('pawn', 'w');
-//       expect(
-//         getPawnMoves<typeof BOARD_SIZE>(board, 'w', [4, 4]).sort()
-//       ).toEqual([[5, 4]].sort());
+    it('doesnt include own pieces', () => {
+      const board = new Gameboard(BOARD_SIZE).board;
 
-//       board[4][3] = new Piece('pawn', 'b');
-//       board[4][1] = new Piece('pawn', 'b');
+      board[45] = 'wp';
+      board[43] = 'wb';
+      expect(getPawnMoves<typeof BOARD_SIZE>(board, 'w', 36).sort()).toEqual(
+        convertArrToIdx([[5, 4]]).sort()
+      );
 
-//       expect(
-//         getPawnMoves<typeof BOARD_SIZE>(board, 'b', [5, 2]).sort()
-//       ).toEqual([[4, 2]].sort());
-//     });
+      board[35] = 'bp';
+      board[33] = 'bb';
 
-//     it('works with enPassant', () => {
-//       expect(
-//         getPawnMoves<typeof BOARD_SIZE>(board, 'w', [4, 4], [5, 3]).sort()
-//       ).toEqual(
-//         [
-//           [5, 4],
-//           [5, 3]
-//         ].sort()
-//       );
-//     });
+      expect(getPawnMoves<typeof BOARD_SIZE>(board, 'b', 42).sort()).toEqual(
+        convertArrToIdx([[4, 2]]).sort()
+      );
+    });
 
-//     it('doesnt include enPassant square if its not a legal move for the pawn', () => {
-//       expect(
-//         getPawnMoves<typeof BOARD_SIZE>(board, 'w', [4, 4], [5, 2]).sort()
-//       ).toEqual([[5, 4]].sort());
-//     });
-//   });
-// });
+    it('works with enPassant', () => {
+      expect(
+        getPawnMoves<typeof BOARD_SIZE>(board, 'w', 36, 43).sort()
+      ).toEqual(
+        convertArrToIdx([
+          [5, 4],
+          [5, 3]
+        ]).sort()
+      );
+    });
+
+    it('doesnt include enPassant square if its not a legal move for the pawn', () => {
+      expect(
+        getPawnMoves<typeof BOARD_SIZE>(board, 'w', 36, 42).sort()
+      ).toEqual(convertArrToIdx([[5, 4]]).sort());
+    });
+  });
+});

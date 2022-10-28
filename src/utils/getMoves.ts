@@ -61,6 +61,9 @@ function getLineMoves<S extends number>({
         break;
       }
 
+      // need to stop at the edge of the board
+      if (move % length === 0 || move % length === length - 1) break;
+
       move = move + d;
       rangeForLine--;
     }

@@ -106,8 +106,6 @@ export default class Gameboard<Size extends number> {
         const s1Idx = convertSquareToIdx(s1, board.length as Size);
         const s2Idx = convertSquareToIdx(s2, board.length as Size);
 
-        // rank needs to go first
-        // index 1 is rank
         const piece = board[s1Idx];
         board[s1Idx] = null;
         board[s2Idx] = piece;
