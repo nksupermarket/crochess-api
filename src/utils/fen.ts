@@ -1,16 +1,15 @@
-import Gameboard from '../classes/Gameboard';
 import Game from '../classes/Game';
 import {
   Board,
   Colors,
   SquareIdx,
   PieceType,
-  Enumerate,
   CastleRightsStr,
   EnPassant,
   Piece,
   FenStr
 } from '../types/types';
+import { convertIdxToSquare } from './square';
 import { isFenStr } from './typeCheck';
 
 export function convertFromFen(
@@ -80,9 +79,9 @@ export function convertFromFen(
   });
 }
 
-export function convertToFen(board: Board) {
-  let boardStr = '';
-  const length = Math.sqrt(board.length);
+export function convertToFen(game: Game) {
+  let fen = '';
+  const length = Math.sqrt(game.board.length);
   // need to iterate over twice
   // first loop for ranks
   // inner loop for files
@@ -92,7 +91,7 @@ export function convertToFen(board: Board) {
       const idx = rank * length + file;
       if (
         // square is empty
-        !board[idx]
+        !game.board[idx]
       ) {
         if (Number(rankStr[rankStr.length - 1])) {
           // if square is empty and end of string is number, just add 1 to the number that is at the end
@@ -103,12 +102,26 @@ export function convertToFen(board: Board) {
         } else rankStr += '1';
       } else {
         // rank[i] is a piece
-        const piece = board[idx] as Piece;
+        const piece = game.board[idx] as Piece;
         rankStr += piece[0] === 'w' ? piece[1].toUpperCase() : piece[1];
       }
     }
-    boardStr += `${rankStr}/`;
+    fen += `${rankStr}/`;
   }
 
-  return boardStr;
+  fen += ` ${game.activeColor}`;
+
+  const castleRightsStr = `${game.castleRights.w.k ? 'K' : ''}${
+    game.castleRights.w.q ? 'Q' : ''
+  }${game.castleRights.b.k ? 'k' : ''}${game.castleRights.w.q ? 'q' : ''}`;
+
+  fen += ` ${castleRightsStr}`;
+
+  const enPassantStr = game.enPassant
+    ? convertIdxToSquare(game.enPassant)
+    : '-';
+
+  fen += ` ${enPassantStr} ${game.halfmoves} ${game.fullmoves}`;
+
+  return fen;
 }

@@ -1,6 +1,11 @@
 import Gameboard from '../src/classes/Gameboard';
 import {} from '../src/utils/constants';
-import { getPieceMoves, getPawnMoves } from '../src/utils/getMoves';
+import {
+  getPieceMoves,
+  getPawnMoves,
+  exportedForTesting
+} from '../src/utils/getMoves';
+import { convertSquareToIdx } from '../src/utils/square';
 
 // wrote this function because I changed the board implementation from a 2d array to a 1d array. Instead of manually converting each expected array I wrote this function instead
 function convertArrToIdx(arr: number[][]) {
@@ -282,4 +287,99 @@ describe('getPawnMoves works', () => {
   });
 });
 
-// describe('getValidKingMoves works', () => {});
+describe('isPiecePinned', () => {
+  const { isPiecePinned } = exportedForTesting;
+
+  test('works on y axis', () => {
+    const gameboard = new Gameboard();
+    gameboard.at(convertSquareToIdx('e2'))?.placePiece('wp');
+    gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
+    gameboard.at(convertSquareToIdx('e8'))?.placePiece('bq');
+
+    expect(isPiecePinned(12, 4, 'b', gameboard.board)).toBe(8);
+  });
+
+  test('works on x axis', () => {
+    const gameboard = new Gameboard();
+    gameboard.at(convertSquareToIdx('b1'))?.placePiece('wp');
+    gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
+    gameboard.at(convertSquareToIdx('a1'))?.placePiece('bq');
+
+    expect(isPiecePinned(1, 4, 'b', gameboard.board)).toBe(-1);
+  });
+
+  describe('works on diagonals', () => {
+    test('upper left', () => {
+      const gameboard = new Gameboard();
+      gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
+      gameboard.at(convertSquareToIdx('d2'))?.placePiece('wp');
+      gameboard.at(convertSquareToIdx('b4'))?.placePiece('bq');
+
+      expect(isPiecePinned(11, 4, 'b', gameboard.board)).toBe(7);
+    });
+    test('upper right', () => {
+      const gameboard = new Gameboard();
+      gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
+      gameboard.at(convertSquareToIdx('f2'))?.placePiece('wp');
+      gameboard.at(convertSquareToIdx('h4'))?.placePiece('bq');
+
+      expect(isPiecePinned(13, 4, 'b', gameboard.board)).toBe(9);
+    });
+    test('bottom left', () => {
+      const gameboard = new Gameboard();
+      gameboard.at(convertSquareToIdx('e4'))?.placePiece('wk');
+      gameboard.at(convertSquareToIdx('d3'))?.placePiece('wr');
+      gameboard.at(convertSquareToIdx('b1'))?.placePiece('bb');
+
+      expect(isPiecePinned(19, 28, 'b', gameboard.board)).toBe(-9);
+    });
+    test('bottom right', () => {
+      const gameboard = new Gameboard();
+      gameboard.at(convertSquareToIdx('e4'))?.placePiece('wk');
+      gameboard.at(convertSquareToIdx('f3'))?.placePiece('wr');
+      gameboard.at(convertSquareToIdx('h1'))?.placePiece('bb');
+
+      expect(isPiecePinned(21, 28, 'b', gameboard.board)).toBe(-7);
+    });
+  });
+});
+
+describe('getSquaresBetweenTwoSquares works', () => {
+  const { getSquaresBetweenTwoSquares } = exportedForTesting;
+
+  test('when squares are on same file', () => {
+    expect(
+      Object.keys(getSquaresBetweenTwoSquares(0, 56) as object)
+        .map((v) => Number(v))
+        .sort()
+    ).toEqual([8, 16, 24, 32, 40, 48].sort());
+
+    expect(
+      Object.keys(getSquaresBetweenTwoSquares(56, 0) as object)
+        .map((v) => Number(v))
+        .sort()
+    ).toEqual([8, 16, 24, 32, 40, 48].sort());
+  });
+
+  test('when squares are on the same rank', () => {
+    expect(
+      Object.keys(getSquaresBetweenTwoSquares(0, 7) as object)
+        .map((v) => Number(v))
+        .sort()
+    ).toEqual([1, 2, 3, 4, 5, 6].sort());
+  });
+
+  test('diagonals', () => {
+    expect(
+      Object.keys(getSquaresBetweenTwoSquares(11, 29) as object)
+        .map((v) => Number(v))
+        .sort()
+    ).toEqual([20].sort());
+
+    expect(
+      Object.keys(getSquaresBetweenTwoSquares(15, 29) as object)
+        .map((v) => Number(v))
+        .sort()
+    ).toEqual([22].sort());
+  });
+});

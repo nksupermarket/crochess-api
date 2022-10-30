@@ -58,6 +58,8 @@ export type EnumerateFromOne<
 
 export type SquareIdx = Enumerate<typeof BOARD_SIZE>;
 
+export type Range = EnumerateFromOne<typeof BOARD_LENGTH>;
+
 export type Permutations<
   T extends string,
   U extends string = T
@@ -69,9 +71,9 @@ export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'>;
 
 export type EnPassant = Square | '-';
 
-export type CastleRights = Record<'kingside' | 'queenside', boolean>;
+export type Side = 'k' | 'q';
 
-export type CastleSquares = Record<'kingside' | 'queenside', SquareIdx[]>;
+export type CastleRights = Record<Side, boolean>;
 
 export type NumberLiteral<N extends Exclude<number, N>> = N;
 
@@ -80,3 +82,5 @@ export type FenStr = string;
 export type Dir = keyof typeof VECTORS;
 
 export type Vector = typeof VECTORS[Dir];
+
+export type SquareMap = { [key in SquareIdx]?: true };

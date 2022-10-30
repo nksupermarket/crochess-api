@@ -1,21 +1,23 @@
 import {
   CastleRights,
   Board,
-  CastleSquares,
   Colors,
   PieceMap,
   PieceType,
   SquareIdx,
-  Square,
   Files,
   Dir,
-  Vector
+  Vector,
+  Range,
+  SquareMap,
+  Tuple
 } from '../types/types';
 import {
   ALL_VECTORS,
   BOARD_LENGTH,
   DIAGONAL_VECTORS,
   FILES,
+  KNIGHT_JUMPS,
   VECTORS,
   XY_VECTORS
 } from './constants';
@@ -25,8 +27,8 @@ import { isSquareIdx } from './typeCheck';
 function traverseAlongVector(
   vector: Vector,
   start: SquareIdx,
-  range = Infinity,
-  cb: (squareIdx: SquareIdx, breakFn: () => void) => void
+  range: Range,
+  cb: (sIdx: SquareIdx, breakLoop: () => void, distance: Range) => void
 ) {
   // can assume move is type SquareIdx because the while loops checks for it anyways
   let square = start + vector;
@@ -36,15 +38,16 @@ function traverseAlongVector(
     isSquareIdx(square)
   ) {
     let shouldBreak = false;
-    cb(square, () => (shouldBreak = true));
+    cb(square, () => (shouldBreak = true), (BOARD_LENGTH - range + 1) as Range);
     if (shouldBreak) break;
 
     // need to stop at the edge of the board
-    if (
-      square % BOARD_LENGTH === 0 ||
-      square % BOARD_LENGTH === BOARD_LENGTH - 1
-    )
-      break;
+    const endOfBoard =
+      vector === VECTORS.up || vector === VECTORS.down
+        ? square <= 7 || square >= 56
+        : square % BOARD_LENGTH === 0 ||
+          square % BOARD_LENGTH === BOARD_LENGTH - 1;
+    if (endOfBoard) break;
 
     square = square + vector;
     range--;
@@ -55,18 +58,18 @@ function getLineMoves({
   board,
   start,
   vectors,
-  range = Infinity,
+  range = BOARD_LENGTH,
   canCapture = true
 }: {
   board: Board;
   start: SquareIdx;
   vectors: Vector[];
-  range?: number;
+  range?: Range;
   canCapture?: boolean;
 }): SquareIdx[] {
   const moves: SquareIdx[] = [];
   vectors.forEach((d) => {
-    traverseAlongVector(d, start, range, (move, breakFn) => {
+    traverseAlongVector(d, start, range, (move, breakLoop) => {
       const piece = board[move];
       if (!piece) {
         moves.push(move);
@@ -76,10 +79,10 @@ function getLineMoves({
         piece[0] !== board[start]?.[0]
       ) {
         moves.push(move);
-        breakFn();
+        breakLoop();
       } else {
         // there is a piece and piece is the same color
-        breakFn();
+        breakLoop();
       }
     });
   });
@@ -90,7 +93,7 @@ function getLineMoves({
 export const getPieceMoves = (
   pieceType: Exclude<PieceType, 'p'>,
   board: Board,
-  square: SquareIdx,
+  sIdx: SquareIdx,
   pinVector?: Vector
 ): SquareIdx[] => {
   function filterOutPinVector(v: Vector) {
@@ -100,19 +103,9 @@ export const getPieceMoves = (
   switch (pieceType) {
     case 'n': {
       if (pinVector) return [];
-      const jumps = [
-        -2 * BOARD_LENGTH + 1,
-        -2 * BOARD_LENGTH - 1,
-        2 * BOARD_LENGTH - 1,
-        2 * BOARD_LENGTH + 1,
-        BOARD_LENGTH + 2,
-        BOARD_LENGTH - 2,
-        -BOARD_LENGTH + 2,
-        -BOARD_LENGTH - 2
-      ];
 
-      return jumps.reduce<SquareIdx[]>((acc, curr) => {
-        const move = square + curr;
+      return KNIGHT_JUMPS.reduce<SquareIdx[]>((acc, curr) => {
+        const move = sIdx + curr;
         if (isSquareIdx(move)) acc.push(move);
         return acc;
       }, []);
@@ -121,7 +114,7 @@ export const getPieceMoves = (
     case 'b': {
       return getLineMoves({
         board,
-        start: square,
+        start: sIdx,
         vectors: pinVector
           ? DIAGONAL_VECTORS.filter(filterOutPinVector)
           : DIAGONAL_VECTORS
@@ -132,7 +125,7 @@ export const getPieceMoves = (
       return getLineMoves({
         board,
         vectors: pinVector ? XY_VECTORS.filter(filterOutPinVector) : XY_VECTORS,
-        start: square
+        start: sIdx
       });
     }
 
@@ -142,7 +135,7 @@ export const getPieceMoves = (
         vectors: pinVector
           ? ALL_VECTORS.filter(filterOutPinVector)
           : ALL_VECTORS,
-        start: square
+        start: sIdx
       });
     }
 
@@ -152,7 +145,7 @@ export const getPieceMoves = (
         vectors: pinVector
           ? ALL_VECTORS.filter(filterOutPinVector)
           : ALL_VECTORS,
-        start: square,
+        start: sIdx,
         range: 1
       });
     }
@@ -165,11 +158,11 @@ export const getPieceMoves = (
 export const getPawnMoves = (
   board: Board,
   color: Colors,
-  square: SquareIdx,
+  sIdx: SquareIdx,
   enPassant?: SquareIdx,
   pinVector?: Vector
 ) => {
-  const rank = Math.floor(square / Math.sqrt(board.length)) + 1;
+  const rank = Math.floor(sIdx / Math.sqrt(board.length)) + 1;
   const firstMove =
     (color === 'w' && rank === 2) || (color === 'b' && rank === 7);
   const forwardDir = color === 'w' ? 'up' : 'down';
@@ -180,7 +173,7 @@ export const getPawnMoves = (
       pinVector && Math.abs(VECTORS[forwardDir]) !== Math.abs(pinVector)
         ? []
         : [VECTORS[forwardDir]],
-    start: square,
+    start: sIdx,
     range: firstMove ? 2 : 1,
     canCapture: false
   });
@@ -191,14 +184,14 @@ export const getPawnMoves = (
   ];
   const captureMoves = getLineMoves({
     board,
-    start: square,
+    start: sIdx,
     vectors: pinVector
       ? captureVectors.filter((v) => v === pinVector || v === -pinVector)
       : captureVectors,
     range: 1
   }).filter((m) => {
     const piece = board[m];
-    // check if it's the same as enpassant square
+    // check if it's the same as enpassant sIdx
     return (
       m === enPassant ||
       // check if there's a piece capture
@@ -209,35 +202,93 @@ export const getPawnMoves = (
   return regMoves.concat(captureMoves);
 };
 
+function getChecks(
+  oppColor: Colors,
+  sIdx: SquareIdx,
+  board: Board
+): Tuple<SquareIdx, 0 | 1 | 2> {
+  const checks: SquareIdx[] = [];
+  for (let i = 0; i < KNIGHT_JUMPS.length; i++) {
+    const pIdx = sIdx + KNIGHT_JUMPS[i];
+    const piece = board[pIdx];
+    if (piece === `${oppColor}n`) checks.push(pIdx as SquareIdx);
+  }
+
+  for (let i = 0; i < XY_VECTORS.length; i++) {
+    traverseAlongVector(
+      XY_VECTORS[i],
+      sIdx,
+      BOARD_LENGTH,
+      (pIdx, breakLoop, distance) => {
+        const piece = board[pIdx];
+        if (
+          piece === `${oppColor}q` ||
+          piece === `${oppColor}r` ||
+          (piece === `${oppColor}k` && distance === 1)
+        ) {
+          checks.push(pIdx as SquareIdx);
+          breakLoop();
+        }
+      }
+    );
+  }
+
+  for (let i = 0; i < DIAGONAL_VECTORS.length; i++) {
+    traverseAlongVector(
+      DIAGONAL_VECTORS[i],
+      sIdx,
+      BOARD_LENGTH,
+      (pIdx, breakLoop, distance) => {
+        const piece = board[pIdx];
+        if (
+          piece === `${oppColor}q` ||
+          piece === `${oppColor}b` ||
+          (piece === `${oppColor}k` && distance === 1) ||
+          (piece === `${oppColor}p` && distance === 1 && oppColor === 'w'
+            ? DIAGONAL_VECTORS[i] > 0
+            : DIAGONAL_VECTORS[i] < 0)
+        ) {
+          checks.push(pIdx as SquareIdx);
+          breakLoop();
+        }
+      }
+    );
+  }
+
+  return checks as Tuple<SquareIdx, 0 | 1 | 2>;
+}
+
 export function getLegalKingMoves(
-  kingSquare: SquareIdx,
+  kingIdx: SquareIdx,
   oppColor: Colors,
   oppPieceMap: PieceMap,
   castleRights: CastleRights,
-  castleSquares: CastleSquares,
   board: Board
 ) {
   // need to remove king because rooks/queens/bishops control the square behind the king as well
   const copy = [...board] as Board;
-  copy[kingSquare] = null;
+  copy[kingIdx] = null;
 
-  const kingMoves = getPieceMoves('k', board, kingSquare);
+  const kingMoves = getPieceMoves('k', board, kingIdx);
   const allEnemyMoves = getAllMoves(copy, oppPieceMap, oppColor);
-
+  const castleSquares: Record<'k' | 'q', SquareIdx[]> = {
+    k: [kingIdx + 1, kingIdx + 2] as SquareIdx[],
+    q: [kingIdx - 1, kingIdx - 2] as SquareIdx[]
+  };
   // check if king can castle
   for (const [side, canCastle] of Object.entries(castleRights)) {
     if (!canCastle) continue;
 
     if (
       // castle squares are not empty or is under control by enemy piece
-      castleSquares[side as 'kingside' | 'queenside'].some((s) => {
+      castleSquares[side as 'k' | 'q'].some((s) => {
         if (board[s] !== null) return true;
-        return !!allEnemyMoves[s];
+        return allEnemyMoves[s];
       })
     )
       continue;
 
-    kingMoves.concat(castleSquares[side as 'kingside' | 'queenside'][1]);
+    kingMoves.concat(castleSquares[side as 'k' | 'q'][1]);
   }
 
   return kingMoves.filter((s) => !!allEnemyMoves[s]);
@@ -247,8 +298,8 @@ function getAllMoves(
   board: Board,
   pieceMap: PieceMap,
   color: Colors
-): Record<SquareIdx, true> {
-  const allMoves = {} as Record<SquareIdx, true>;
+): SquareMap {
+  const allMoves: SquareMap = {};
   for (const [type, pieceSquares] of Object.entries(pieceMap)) {
     const pieceType = type as PieceType;
     for (let i = 0; i < pieceSquares.length; i++) {
@@ -263,32 +314,27 @@ function getAllMoves(
   return allMoves;
 }
 
-function getPossiblePinDirection(
-  pieceIdx: SquareIdx,
-  kingIdx: SquareIdx
-): Dir | undefined {
-  // check if king lies along the same line as piece
-  // get the direction of the king eg. left, right, up, down, or diagonal
-  // return the the opposite direction ie. if king is to the left of the piece, return right
+function getDirOfS1FromS2(s1Idx: SquareIdx, s2Idx: SquareIdx): Dir | undefined {
+  // check if squares lies along the same line
+  // figure out direction of s2 in relation to s1 eg. s1 is to right of s2
 
-  const pieceSquare = convertIdxToSquare(pieceIdx);
-  const kingSquare: Square = convertIdxToSquare(kingIdx);
+  const s1 = convertIdxToSquare(s1Idx);
+  const s2 = convertIdxToSquare(s2Idx);
 
-  if (pieceSquare[0] === kingSquare[0]) {
+  if (s1[0] === s2[0]) {
     // squares are on same file
-    return Number(pieceSquare[1]) > Number(kingSquare[1]) ? 'up' : 'down';
+    return Number(s1[1]) > Number(s2[1]) ? 'up' : 'down';
   }
 
-  if (pieceSquare[1] === kingSquare[1]) {
-    return pieceSquare[0] > kingSquare[0] ? 'right' : 'left';
+  if (s1[1] === s2[1]) {
+    return s1[0] > s2[0] ? 'right' : 'left';
   }
 
   // finding if
-  const rankDiff = Number(pieceSquare[1]) - Number(kingSquare[1]);
+  const rankDiff = Number(s1[1]) - Number(s2[1]);
 
   const fileDiff =
-    FILES.indexOf(pieceSquare[0] as Files) -
-    FILES.indexOf(kingSquare[0] as Files);
+    FILES.indexOf(s1[0] as Files) - FILES.indexOf(s2[0] as Files);
 
   if (Math.abs(rankDiff) !== Math.abs(fileDiff)) return;
 
@@ -301,42 +347,84 @@ function getPossiblePinDirection(
   return diagDir as Dir;
 }
 
+function getSquaresAlongDir(
+  vector: Vector,
+  start: SquareIdx,
+  cb?: (sIdx: SquareIdx, breakLoop: () => void) => void
+) {
+  const vectorMap: SquareMap = {};
+  traverseAlongVector(vector, start, BOARD_LENGTH, (sIdx, breakLoop) => {
+    vectorMap[sIdx] = true;
+    cb && cb(sIdx, breakLoop);
+  });
+  return vectorMap;
+}
+
+function getSquaresBetweenTwoSquares(s1Idx: SquareIdx, s2Idx: SquareIdx) {
+  const dir = getDirOfS1FromS2(s1Idx, s2Idx);
+  if (!dir) return;
+
+  return getSquaresAlongDir(VECTORS[dir], s2Idx, (sIdx, breakLoop) => {
+    // dont want to include s1Idx
+    if (sIdx === s1Idx - VECTORS[dir]) breakLoop();
+  });
+}
+
 function isPiecePinned(
-  square: SquareIdx,
-  kingSquare: SquareIdx,
-  oppPieceMap: PieceMap
+  sIdx: SquareIdx,
+  kingIdx: SquareIdx,
+  oppColor: Colors,
+  board: Board
 ): Vector | undefined {
-  const dirOfPin = getPossiblePinDirection(square, kingSquare);
+  // returns undefined because pin vector is an optional parameter
+  const dirOfPin = getDirOfS1FromS2(sIdx, kingIdx);
   if (!dirOfPin) return undefined;
 
   const isDiagonal = dirOfPin.includes(' ');
   const pinPieceType = isDiagonal ? 'b' : 'r';
   // vectors represented as an offset
-
   const pinVector = VECTORS[dirOfPin];
-
-  type VectorMap = { [key in SquareIdx]?: boolean };
-  const vectorMap: VectorMap = {};
-  traverseAlongVector(pinVector, square, Infinity, (squareIdx) => {
-    vectorMap[squareIdx] = true;
+  let pinned = false;
+  traverseAlongVector(pinVector, sIdx, BOARD_LENGTH, (mIdx, breakLoop) => {
+    if (
+      board[mIdx] === `${oppColor}${pinPieceType}` ||
+      board[mIdx] === `${oppColor}q`
+    ) {
+      pinned = true;
+      breakLoop();
+    }
   });
 
-  return oppPieceMap[pinPieceType].some((s: SquareIdx) => vectorMap[s])
-    ? pinVector
-    : undefined;
+  return pinned ? pinVector : undefined;
 }
 
 export function getLegalMoves(
   pieceType: Exclude<PieceType, 'k'>,
   board: Board,
   color: Colors,
-  square: SquareIdx,
-  kingSquare: SquareIdx,
-  oppPieceMap: PieceMap,
+  sIdx: SquareIdx,
+  kingIdx: SquareIdx,
   enPassant?: SquareIdx
 ): SquareIdx[] {
-  const pinVector = isPiecePinned(square, kingSquare, oppPieceMap);
-  return pieceType === 'p'
-    ? getPawnMoves(board, color, square, enPassant, pinVector)
-    : getPieceMoves(pieceType, board, square, pinVector);
+  const oppColor = color === 'w' ? 'b' : 'w';
+  const check = getChecks(oppColor, sIdx, board);
+  const pinVector = isPiecePinned(sIdx, kingIdx, oppColor, board);
+  const moves =
+    pieceType === 'p'
+      ? getPawnMoves(board, color, sIdx, enPassant, pinVector)
+      : getPieceMoves(pieceType, board, sIdx, pinVector);
+
+  if (check.length === 0) return moves;
+  if (check.length === 1) {
+    const block = getSquaresBetweenTwoSquares(kingIdx, check[0]) as SquareMap;
+    return moves.filter((s) => block[s]);
+  }
+  if (check.length === 2) return [];
+
+  return [];
 }
+
+export const exportedForTesting = {
+  isPiecePinned,
+  getSquaresBetweenTwoSquares
+};

@@ -1,15 +1,15 @@
+import { getLegalKingMoves, getLegalMoves } from 'src/utils/getMoves';
 import {
   Board,
   Colors,
   PieceMap,
   PieceType,
-  Square,
   SquareIdx,
-  Piece
+  Piece,
+  CastleRights,
+  Side
 } from '../types/types';
-import { BOARD_SIZE, COLORS, PIECE_TYPES } from '../utils/constants';
-import { convertSquareToIdx } from '../utils/square';
-import { isSquare } from '../utils/typeCheck';
+import { BOARD_SIZE, COLORS, OPP_COLOR, PIECE_TYPES } from '../utils/constants';
 
 export default class Gameboard {
   board: Board;
@@ -80,13 +80,39 @@ export default class Gameboard {
     );
   }
 
-  at(square: Square, board = this.board) {
-    if (!isSquare(square)) return;
-    const idx = convertSquareToIdx(square);
-
+  at(idx: SquareIdx, board = this.board) {
     return {
       get piece() {
         return board[idx];
+      },
+
+      moves: ({
+        enPassant,
+        castleRights
+      }: {
+        enPassant: SquareIdx | null;
+        castleRights: CastleRights;
+      }) => {
+        const piece = board[idx];
+        if (!piece) return null;
+        if (piece[1] !== 'k') {
+          return getLegalMoves(
+            piece[1] as Exclude<PieceType, 'k'>,
+            board,
+            piece[0] as Colors,
+            idx,
+            this.pieceMap[piece[0] as Colors].k[0],
+            enPassant || undefined
+          );
+        } else {
+          return getLegalKingMoves(
+            this.pieceMap[piece[0] as Colors].k[0],
+            OPP_COLOR[piece[0] as Colors],
+            this.pieceMap[OPP_COLOR[piece[0] as Colors]],
+            castleRights,
+            board
+          );
+        }
       },
 
       placePiece: (piece: Piece) => {
@@ -115,15 +141,10 @@ export default class Gameboard {
     };
   }
 
-  from(s1: Square, board = this.board) {
-    if (!isSquare(s1)) return;
+  from(s1Idx: SquareIdx, board = this.board) {
     return {
-      to: (s2: Square) => {
-        if (!isSquare(s2)) return;
-        if (s1 === s2) return;
-
-        const s1Idx = convertSquareToIdx(s1);
-        const s2Idx = convertSquareToIdx(s2);
+      to: (s2Idx: SquareIdx) => {
+        if (s1Idx === s2Idx) return;
 
         const piece = board[s1Idx];
         if (!piece) return;
@@ -138,5 +159,18 @@ export default class Gameboard {
         );
       }
     };
+  }
+
+  castle(color: Colors, side: Side) {
+    const kingIdx = this.pieceMap[color].k[0];
+    const rookIdx = this.pieceMap[color].r.find((s) =>
+      side === 'q' ? s < kingIdx : s > kingIdx
+    ) as SquareIdx;
+    this.from(rookIdx).to(
+      (side === 'q' ? kingIdx - 1 : kingIdx + 1) as SquareIdx
+    );
+    this.from(kingIdx).to(
+      (side === 'q' ? kingIdx - 2 : kingIdx + 2) as SquareIdx
+    );
   }
 }

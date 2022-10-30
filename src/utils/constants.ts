@@ -40,6 +40,17 @@ export const BOARD_SIZE = 64;
 
 export const BOARD_LENGTH = 8;
 
+export const KNIGHT_JUMPS = [
+  -2 * BOARD_LENGTH + 1,
+  -2 * BOARD_LENGTH - 1,
+  2 * BOARD_LENGTH - 1,
+  2 * BOARD_LENGTH + 1,
+  BOARD_LENGTH + 2,
+  BOARD_LENGTH - 2,
+  -BOARD_LENGTH + 2,
+  -BOARD_LENGTH - 2
+] as const;
+
 export const VECTORS = {
   up: BOARD_LENGTH,
   down: -8,
@@ -66,3 +77,8 @@ export const XY_VECTORS = [
 ];
 
 export const ALL_VECTORS = [...XY_VECTORS, ...DIAGONAL_VECTORS];
+
+export const OPP_COLOR = {
+  w: 'b',
+  b: 'w'
+} as const;
