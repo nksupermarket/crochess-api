@@ -1,9 +1,8 @@
 import Gameboard from '../src/classes/Gameboard';
-import { BOARD_SIZE } from '../src/utils/constants';
 import { convertFromFen, convertToFen } from '../src/utils/fen';
 
 describe('convertFromFen works', () => {
-  const gameboard = new Gameboard(BOARD_SIZE);
+  const gameboard = new Gameboard();
 
   it('works for starting position', () => {
     gameboard.init();
@@ -25,7 +24,7 @@ describe('convertFromFen works', () => {
 });
 
 describe('convertToFen works', () => {
-  const gameboard = new Gameboard(BOARD_SIZE);
+  const gameboard = new Gameboard();
 
   it('works for starting position', () => {
     gameboard.init();

@@ -1,22 +1,16 @@
 import { Square, EnumerateFromOne, Files, SquareIdx } from 'src/types/types';
-import { FILES } from './constants';
+import { BOARD_LENGTH, FILES } from './constants';
 
-export function convertSquareToIdx<S extends number, L extends number>(
-  square: Square<Files, EnumerateFromOne<L>>,
-  boardSize: S
-): SquareIdx<S> {
-  const length = Math.sqrt(boardSize);
+export function convertSquareToIdx(square: Square): SquareIdx {
   return (FILES.indexOf(square[0] as Files) +
-    Number(+square[1] - 1) * length) as SquareIdx<S>;
+    Number(+square[1] - 1) * BOARD_LENGTH) as SquareIdx;
 }
 
-export function convertIdxToSquare<S extends number, L extends number>(
-  idx: SquareIdx<S>,
-  boardSize: S
-): Square<Files, EnumerateFromOne<L>> {
-  const length: L = Math.sqrt(boardSize) as L;
-  const file = FILES[idx % length];
-  const rank = (Math.floor(idx / length) + 1) as EnumerateFromOne<L>;
+export function convertIdxToSquare(idx: SquareIdx): Square {
+  const file = FILES[idx % BOARD_LENGTH];
+  const rank = (Math.floor(idx / BOARD_LENGTH) + 1) as EnumerateFromOne<
+    typeof BOARD_LENGTH
+  >;
 
   return `${file}${rank}`;
 }

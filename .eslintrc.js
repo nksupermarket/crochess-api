@@ -22,6 +22,7 @@ module.exports = {
     // to enforce using type for object type definitions, can be type or interface
     '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
     'no-use-before-define': 'off',
-    '@typescript-eslint/no-explicit-any': 'off'
+    '@typescript-eslint/no-explicit-any': 'off',
+    'no-labels': 'off'
   }
 };

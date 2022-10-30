@@ -3,50 +3,70 @@ import {
   Board,
   CastleSquares,
   Colors,
-  Line,
   PieceMap,
   PieceType,
-  SquareIdx
+  SquareIdx,
+  Square,
+  Files,
+  Dir,
+  Vector
 } from '../types/types';
-
+import {
+  ALL_VECTORS,
+  BOARD_LENGTH,
+  DIAGONAL_VECTORS,
+  FILES,
+  VECTORS,
+  XY_VECTORS
+} from './constants';
+import { convertIdxToSquare } from './square';
 import { isSquareIdx } from './typeCheck';
 
-function getLineMoves<S extends number>({
-  dir,
+function traverseAlongVector(
+  vector: Vector,
+  start: SquareIdx,
+  range = Infinity,
+  cb: (squareIdx: SquareIdx, breakFn: () => void) => void
+) {
+  // can assume move is type SquareIdx because the while loops checks for it anyways
+  let square = start + vector;
+  while (
+    range &&
+    // move is a valid square on the board
+    isSquareIdx(square)
+  ) {
+    let shouldBreak = false;
+    cb(square, () => (shouldBreak = true));
+    if (shouldBreak) break;
+
+    // need to stop at the edge of the board
+    if (
+      square % BOARD_LENGTH === 0 ||
+      square % BOARD_LENGTH === BOARD_LENGTH - 1
+    )
+      break;
+
+    square = square + vector;
+    range--;
+  }
+}
+
+function getLineMoves({
   board,
   start,
+  vectors,
   range = Infinity,
-  canCapture = true,
-  onlyForward
+  canCapture = true
 }: {
-  dir: Line;
-  board: Board<S>;
-  start: SquareIdx<S>;
+  board: Board;
+  start: SquareIdx;
+  vectors: Vector[];
   range?: number;
   canCapture?: boolean;
-  onlyForward?: Colors;
-}): SquareIdx<S>[] {
-  const length = Math.sqrt(board.length);
-  let lines = {
-    diagonal: [length + 1, length - 1, -length + 1, -length - 1],
-    xy: [1, -1, length, -length]
-  }[dir];
-
-  if (onlyForward) {
-    const forward = onlyForward === 'w' ? length : -length;
-    lines = lines.filter((l) => l + 2 > forward && l - 2 < forward);
-  }
-
-  const moves: SquareIdx<S>[] = [];
-  lines.forEach((d) => {
-    let rangeForLine = range;
-    // can assume move is type SquareIdx because the while loops checks for it anyways
-    let move = start + d;
-    while (
-      rangeForLine &&
-      // move is a valid square on the board
-      isSquareIdx(board.length as S, move)
-    ) {
+}): SquareIdx[] {
+  const moves: SquareIdx[] = [];
+  vectors.forEach((d) => {
+    traverseAlongVector(d, start, range, (move, breakFn) => {
       const piece = board[move];
       if (!piece) {
         moves.push(move);
@@ -56,69 +76,85 @@ function getLineMoves<S extends number>({
         piece[0] !== board[start]?.[0]
       ) {
         moves.push(move);
-        break;
+        breakFn();
       } else {
-        break;
+        // there is a piece and piece is the same color
+        breakFn();
       }
-
-      // need to stop at the edge of the board
-      if (move % length === 0 || move % length === length - 1) break;
-
-      move = move + d;
-      rangeForLine--;
-    }
+    });
   });
 
   return moves;
 }
 
-export const getPieceMoves = <S extends number>(
-  pieceType: Exclude<PieceType, 'p' | 'P'>,
-  board: Board<S>,
-  square: SquareIdx<S>
-): SquareIdx<S>[] => {
+export const getPieceMoves = (
+  pieceType: Exclude<PieceType, 'p'>,
+  board: Board,
+  square: SquareIdx,
+  pinVector?: Vector
+): SquareIdx[] => {
+  function filterOutPinVector(v: Vector) {
+    const pv = pinVector as Vector;
+    return v === pv || v === -pv;
+  }
   switch (pieceType) {
     case 'n': {
-      const length = Math.sqrt(board.length);
+      if (pinVector) return [];
       const jumps = [
-        -2 * length + 1,
-        -2 * length - 1,
-        2 * length - 1,
-        2 * length + 1,
-        length + 2,
-        length - 2,
-        -length + 2,
-        -length - 2
-      ] as const;
+        -2 * BOARD_LENGTH + 1,
+        -2 * BOARD_LENGTH - 1,
+        2 * BOARD_LENGTH - 1,
+        2 * BOARD_LENGTH + 1,
+        BOARD_LENGTH + 2,
+        BOARD_LENGTH - 2,
+        -BOARD_LENGTH + 2,
+        -BOARD_LENGTH - 2
+      ];
 
-      return jumps.reduce((acc, curr) => {
+      return jumps.reduce<SquareIdx[]>((acc, curr) => {
         const move = square + curr;
-        if (isSquareIdx(board.length as S, move)) acc.push(move);
+        if (isSquareIdx(move)) acc.push(move);
         return acc;
-      }, [] as SquareIdx<S>[]);
+      }, []);
     }
 
     case 'b': {
-      return getLineMoves({ board, dir: 'diagonal', start: square });
+      return getLineMoves({
+        board,
+        start: square,
+        vectors: pinVector
+          ? DIAGONAL_VECTORS.filter(filterOutPinVector)
+          : DIAGONAL_VECTORS
+      });
     }
 
     case 'r': {
-      return getLineMoves({ board, dir: 'xy', start: square });
+      return getLineMoves({
+        board,
+        vectors: pinVector ? XY_VECTORS.filter(filterOutPinVector) : XY_VECTORS,
+        start: square
+      });
     }
 
     case 'q': {
-      return getLineMoves({ board, dir: 'diagonal', start: square }).concat(
-        getLineMoves({ board, dir: 'xy', start: square })
-      );
+      return getLineMoves({
+        board,
+        vectors: pinVector
+          ? ALL_VECTORS.filter(filterOutPinVector)
+          : ALL_VECTORS,
+        start: square
+      });
     }
 
     case 'k': {
       return getLineMoves({
         board,
-        dir: 'diagonal',
+        vectors: pinVector
+          ? ALL_VECTORS.filter(filterOutPinVector)
+          : ALL_VECTORS,
         start: square,
         range: 1
-      }).concat(getLineMoves({ board, dir: 'xy', start: square, range: 1 }));
+      });
     }
 
     default:
@@ -126,31 +162,40 @@ export const getPieceMoves = <S extends number>(
   }
 };
 
-export const getPawnMoves = <S extends number>(
-  board: Board<S>,
+export const getPawnMoves = (
+  board: Board,
   color: Colors,
-  square: SquareIdx<S>,
-  enPassant?: SquareIdx<S>
+  square: SquareIdx,
+  enPassant?: SquareIdx,
+  pinVector?: Vector
 ) => {
   const rank = Math.floor(square / Math.sqrt(board.length)) + 1;
   const firstMove =
     (color === 'w' && rank === 2) || (color === 'b' && rank === 7);
+  const forwardDir = color === 'w' ? 'up' : 'down';
 
   const regMoves = getLineMoves({
     board,
+    vectors:
+      pinVector && Math.abs(VECTORS[forwardDir]) !== Math.abs(pinVector)
+        ? []
+        : [VECTORS[forwardDir]],
     start: square,
-    dir: 'xy',
     range: firstMove ? 2 : 1,
-    onlyForward: color,
     canCapture: false
   });
 
+  const captureVectors = [
+    VECTORS[`${forwardDir} left`],
+    VECTORS[`${forwardDir} right`]
+  ];
   const captureMoves = getLineMoves({
     board,
     start: square,
-    dir: 'diagonal',
-    range: 1,
-    onlyForward: color
+    vectors: pinVector
+      ? captureVectors.filter((v) => v === pinVector || v === -pinVector)
+      : captureVectors,
+    range: 1
   }).filter((m) => {
     const piece = board[m];
     // check if it's the same as enpassant square
@@ -164,22 +209,20 @@ export const getPawnMoves = <S extends number>(
   return regMoves.concat(captureMoves);
 };
 
-export function getValidKingMoves<S extends number>(
-  kingSquare: SquareIdx<S>,
+export function getLegalKingMoves(
+  kingSquare: SquareIdx,
   oppColor: Colors,
-  oppPieceMap: PieceMap<S>,
+  oppPieceMap: PieceMap,
   castleRights: CastleRights,
-  castleSquares: CastleSquares<S>,
-  board: Board<S>
+  castleSquares: CastleSquares,
+  board: Board
 ) {
-  if (!isSquareIdx(board.length, kingSquare)) return;
-
   // need to remove king because rooks/queens/bishops control the square behind the king as well
-  const copy = [...board] as Board<S>;
+  const copy = [...board] as Board;
   copy[kingSquare] = null;
 
   const kingMoves = getPieceMoves('k', board, kingSquare);
-  const allEnemyMoves = getAllMoves<S>(copy, oppPieceMap, oppColor);
+  const allEnemyMoves = getAllMoves(copy, oppPieceMap, oppColor);
 
   // check if king can castle
   for (const [side, canCastle] of Object.entries(castleRights)) {
@@ -187,10 +230,9 @@ export function getValidKingMoves<S extends number>(
 
     if (
       // castle squares are not empty or is under control by enemy piece
-      !castleSquares[side as 'kingside' | 'queenside'].every((s) => {
-        if (!isSquareIdx(board.length, s)) return false;
-        if (board[s] !== null) return false;
-        return !allEnemyMoves[s];
+      castleSquares[side as 'kingside' | 'queenside'].some((s) => {
+        if (board[s] !== null) return true;
+        return !!allEnemyMoves[s];
       })
     )
       continue;
@@ -198,15 +240,15 @@ export function getValidKingMoves<S extends number>(
     kingMoves.concat(castleSquares[side as 'kingside' | 'queenside'][1]);
   }
 
-  return kingMoves.filter((s) => allEnemyMoves[s]);
+  return kingMoves.filter((s) => !!allEnemyMoves[s]);
 }
 
-function getAllMoves<S extends number>(
-  board: Board<S>,
-  pieceMap: PieceMap<S>,
+function getAllMoves(
+  board: Board,
+  pieceMap: PieceMap,
   color: Colors
-): Record<SquareIdx<S>, true> {
-  const allMoves = {} as Record<SquareIdx<S>, true>;
+): Record<SquareIdx, true> {
+  const allMoves = {} as Record<SquareIdx, true>;
   for (const [type, pieceSquares] of Object.entries(pieceMap)) {
     const pieceType = type as PieceType;
     for (let i = 0; i < pieceSquares.length; i++) {
@@ -219,4 +261,82 @@ function getAllMoves<S extends number>(
     }
   }
   return allMoves;
+}
+
+function getPossiblePinDirection(
+  pieceIdx: SquareIdx,
+  kingIdx: SquareIdx
+): Dir | undefined {
+  // check if king lies along the same line as piece
+  // get the direction of the king eg. left, right, up, down, or diagonal
+  // return the the opposite direction ie. if king is to the left of the piece, return right
+
+  const pieceSquare = convertIdxToSquare(pieceIdx);
+  const kingSquare: Square = convertIdxToSquare(kingIdx);
+
+  if (pieceSquare[0] === kingSquare[0]) {
+    // squares are on same file
+    return Number(pieceSquare[1]) > Number(kingSquare[1]) ? 'up' : 'down';
+  }
+
+  if (pieceSquare[1] === kingSquare[1]) {
+    return pieceSquare[0] > kingSquare[0] ? 'right' : 'left';
+  }
+
+  // finding if
+  const rankDiff = Number(pieceSquare[1]) - Number(kingSquare[1]);
+
+  const fileDiff =
+    FILES.indexOf(pieceSquare[0] as Files) -
+    FILES.indexOf(kingSquare[0] as Files);
+
+  if (Math.abs(rankDiff) !== Math.abs(fileDiff)) return;
+
+  let diagDir = '';
+  if (rankDiff > 0) diagDir += 'up';
+  else diagDir += 'down';
+  if (fileDiff > 0) diagDir += ' right';
+  else diagDir += ' left';
+
+  return diagDir as Dir;
+}
+
+function isPiecePinned(
+  square: SquareIdx,
+  kingSquare: SquareIdx,
+  oppPieceMap: PieceMap
+): Vector | undefined {
+  const dirOfPin = getPossiblePinDirection(square, kingSquare);
+  if (!dirOfPin) return undefined;
+
+  const isDiagonal = dirOfPin.includes(' ');
+  const pinPieceType = isDiagonal ? 'b' : 'r';
+  // vectors represented as an offset
+
+  const pinVector = VECTORS[dirOfPin];
+
+  type VectorMap = { [key in SquareIdx]?: boolean };
+  const vectorMap: VectorMap = {};
+  traverseAlongVector(pinVector, square, Infinity, (squareIdx) => {
+    vectorMap[squareIdx] = true;
+  });
+
+  return oppPieceMap[pinPieceType].some((s: SquareIdx) => vectorMap[s])
+    ? pinVector
+    : undefined;
+}
+
+export function getLegalMoves(
+  pieceType: Exclude<PieceType, 'k'>,
+  board: Board,
+  color: Colors,
+  square: SquareIdx,
+  kingSquare: SquareIdx,
+  oppPieceMap: PieceMap,
+  enPassant?: SquareIdx
+): SquareIdx[] {
+  const pinVector = isPiecePinned(square, kingSquare, oppPieceMap);
+  return pieceType === 'p'
+    ? getPawnMoves(board, color, square, enPassant, pinVector)
+    : getPieceMoves(pieceType, board, square, pinVector);
 }

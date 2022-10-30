@@ -1,5 +1,4 @@
 import {
-  EnumerateFromOne,
   Files,
   SquareIdx,
   Square,
@@ -7,27 +6,27 @@ import {
   Colors,
   FenStr
 } from '../types/types';
-import { COLORS, FILES, PIECE_TO_POINT_MAP, PIECE_TYPES } from './constants';
+import {
+  BOARD_LENGTH,
+  BOARD_SIZE,
+  COLORS,
+  FILES,
+  PIECE_TYPES
+} from './constants';
 
-export function isSquareIdx<B extends number>(
-  boardSize: B,
-  value: number
-): value is SquareIdx<B> {
-  return value >= 0 && value < boardSize;
+export function isSquareIdx(value: number): value is SquareIdx {
+  return value >= 0 && value < BOARD_SIZE;
 }
 
 export function isFiles(char: string): char is Files {
   return !!FILES.find((v) => v === char);
 }
 
-export function isSquare<N extends number>(
-  boardSize: N,
-  value: string
-): value is Square<Files, EnumerateFromOne<N>> {
+export function isSquare(value: string): value is Square {
   if (value.length > 2) return false;
   if (!isFiles(value[0])) return false;
-  if (FILES.indexOf(value[0]) >= boardSize) return false;
-  if (+value[1] > boardSize) return false;
+  if (FILES.indexOf(value[0]) >= BOARD_LENGTH) return false;
+  if (+value[1] > BOARD_LENGTH) return false;
   return true;
 }
 
@@ -63,7 +62,7 @@ export function isFenStr(str: string): str is FenStr {
     fullmoves
   ] = split;
   const splitIntoRanks = boardStr.split('/');
-  const size = splitIntoRanks.length;
+  if (splitIntoRanks.length !== BOARD_LENGTH) return false;
 
   if (
     splitIntoRanks.some((r) => {
@@ -75,7 +74,7 @@ export function isFenStr(str: string): str is FenStr {
         else return true;
       }
 
-      return rankSize !== size;
+      return rankSize !== BOARD_LENGTH;
     })
   ) {
     return false;
@@ -83,7 +82,7 @@ export function isFenStr(str: string): str is FenStr {
 
   if (!isColor(activeColor)) return false;
   if (!isCastleRightsStr(castleRightsStr)) return false;
-  if (!isSquare(size, enPassant) && enPassant !== '-') return false;
+  if (!isSquare(enPassant) && enPassant !== '-') return false;
   if (isNaN(Number(halfmoves))) return false;
   if (isNaN(Number(fullmoves))) return false;
 

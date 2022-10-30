@@ -13,17 +13,17 @@ import {
 } from '../types/types';
 import { isFenStr } from './typeCheck';
 
-export function convertFromFen<Size extends number>(
+export function convertFromFen(
   fen: FenStr,
-  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx<Size>) => void
-): Game<Size>;
-export function convertFromFen<Size extends number>(
+  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx) => void
+): Game;
+export function convertFromFen(
   fen: string,
-  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx<Size>) => void
+  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx) => void
 ): undefined;
-export function convertFromFen<Size extends number>(
+export function convertFromFen(
   fen: string,
-  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx<Size>) => void
+  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx) => void
 ) {
   if (!isFenStr(fen)) return;
 
@@ -40,7 +40,7 @@ export function convertFromFen<Size extends number>(
   // convert board
   const splitIntoRanks = boardStr.split('/');
   splitIntoRanks.reverse();
-  const board = splitIntoRanks.reduce<Board<Size>>((acc, curr, idx) => {
+  const board = splitIntoRanks.reduce<(Piece | null)[]>((acc, curr, idx) => {
     // iterate over the string representation of the rank
     // for each character, adjust the rank accordingly
     // idx represents rank
@@ -62,28 +62,25 @@ export function convertFromFen<Size extends number>(
         cb(
           pieceType,
           piece[0] as Colors,
-          ((idx - 1) * splitIntoRanks.length +
-            rank.length -
-            1) as Enumerate<Size>
+          ((idx - 1) * splitIntoRanks.length + rank.length - 1) as SquareIdx
         );
     }
 
-    acc = acc.concat(rank) as Board<Size>;
+    acc = acc.concat(rank);
     return acc;
-  }, [] as Board<Size>);
+  }, []);
 
-  return new Game<Size>({
-    board,
+  return new Game({
     halfmoves,
     fullmoves,
-    boardSize: board.length as Size,
+    board: board as Board,
     castleRightsStr: castleRightsStr as CastleRightsStr,
-    enPassant: enPassant as EnPassant<Size>,
+    enPassant: enPassant as EnPassant,
     activeColor: activeColor as Colors
   });
 }
 
-export function convertToFen<Size extends number>(board: Board<Size>) {
+export function convertToFen(board: Board) {
   let boardStr = '';
   const length = Math.sqrt(board.length);
   // need to iterate over twice

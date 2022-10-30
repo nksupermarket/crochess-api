@@ -1,8 +1,8 @@
 import Gameboard from '../src/classes/Gameboard';
-import { BOARD_SIZE } from '../src/utils/constants';
+import { convertSquareToIdx } from '../src/utils/square';
 
 test('init works correctly', () => {
-  const gameboard = new Gameboard(BOARD_SIZE);
+  const gameboard = new Gameboard();
 
   gameboard.init();
 
@@ -41,4 +41,48 @@ test('init works correctly', () => {
   expect(gameboard.board[53]).toEqual('bp');
   expect(gameboard.board[54]).toEqual('bp');
   expect(gameboard.board[55]).toEqual('bp');
+});
+
+describe('"at" interface works correctly', () => {
+  const gameboard = new Gameboard();
+  test('placePiece places a piece and pushes it to the piece map', () => {
+    gameboard.at('a1')?.placePiece('wr');
+
+    expect(gameboard.board[0] === 'wr');
+    expect(gameboard.pieceMap.w.r).toEqual([0]);
+  });
+
+  test('remove removes the piece from the board and piece map', () => {
+    gameboard.at('a1')?.remove();
+
+    expect(gameboard.board[0] === null);
+    expect(gameboard.pieceMap.w.r).toEqual([]);
+  });
+
+  test('promote promotes the piece, removes the square from the piece map of the old piece type and adds it to the piece map of the new piece type', () => {
+    gameboard.at('a1')?.placePiece('bp');
+    gameboard.at('a1')?.promote('q');
+
+    expect(gameboard.board[0]).toBe('bq');
+    expect(gameboard.pieceMap.b.p.length === 0);
+    expect(gameboard.pieceMap.b.q).toEqual([0]);
+  });
+
+  test('piece getter works', () => {
+    gameboard.at('e5')?.placePiece('wr');
+    expect(gameboard.at('e5')?.piece).toBe('wr');
+  });
+});
+
+test('from().to moves the piece on the board and on the piece map', () => {
+  const gameboard = new Gameboard();
+
+  gameboard.at('a1')?.placePiece('bp');
+
+  gameboard.from('a1')?.to('a2');
+
+  expect(gameboard.at('a1')?.piece).toBe(null);
+  expect(gameboard.at('a2')?.piece).toBe('bp');
+
+  expect(gameboard.pieceMap.b.p).toEqual([convertSquareToIdx('a2')]);
 });

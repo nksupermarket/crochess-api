@@ -4,6 +4,7 @@ import {
   CastleRightsStr,
   Colors,
   EnPassant,
+  PieceType,
   SquareIdx
 } from '../types/types';
 import { convertSquareToIdx } from '../utils/square';
@@ -11,15 +12,14 @@ import { isSquare } from '../utils/typeCheck';
 import Gameboard from './Gameboard';
 import { COLORS } from '../utils/constants';
 
-export default class Game<Size extends number> extends Gameboard<Size> {
+export default class Game extends Gameboard {
   castleRights: Record<Colors, CastleRights>;
-  enPassant: SquareIdx<Size> | null;
+  enPassant: SquareIdx | null;
   halfmoves: number;
   fullmoves: number;
   activeColor: Colors;
 
   constructor({
-    boardSize,
     castleRightsStr = 'KQkq',
     board,
     enPassant,
@@ -27,15 +27,14 @@ export default class Game<Size extends number> extends Gameboard<Size> {
     fullmoves = 0,
     activeColor = 'w'
   }: {
-    boardSize: Size;
     castleRightsStr: CastleRightsStr;
-    enPassant: EnPassant<Size>;
+    enPassant: EnPassant;
     halfmoves: string | number;
     fullmoves: string | number;
     activeColor: Colors;
-    board?: Board<Size>;
+    board?: Board;
   }) {
-    super(boardSize, board && board);
+    super(board);
     this.castleRights = COLORS.reduce<Record<Colors, CastleRights>>(
       (acc, curr) => {
         const kingsideStr = curr === 'w' ? 'K' : 'k';
@@ -49,9 +48,7 @@ export default class Game<Size extends number> extends Gameboard<Size> {
       },
       {} as Record<Colors, CastleRights>
     );
-    this.enPassant = isSquare(boardSize as Size, enPassant)
-      ? convertSquareToIdx(enPassant, boardSize as Size)
-      : null;
+    this.enPassant = isSquare(enPassant) ? convertSquareToIdx(enPassant) : null;
     this.halfmoves = Number(halfmoves);
     this.fullmoves = Number(fullmoves);
     this.activeColor = activeColor;

@@ -4,8 +4,6 @@ import {
   PieceMap,
   PieceType,
   Square,
-  Files,
-  EnumerateFromOne,
   SquareIdx,
   Piece
 } from '../types/types';
@@ -13,35 +11,32 @@ import { BOARD_SIZE, COLORS, PIECE_TYPES } from '../utils/constants';
 import { convertSquareToIdx } from '../utils/square';
 import { isSquare } from '../utils/typeCheck';
 
-export default class Gameboard<Size extends number> {
-  board: Board<Size>;
-  pieceMap: Record<Colors, PieceMap<Size>>;
+export default class Gameboard {
+  board: Board;
+  pieceMap: Record<Colors, PieceMap>;
   readonly length: number;
 
-  constructor(size: Size, board?: Board<Size>) {
-    this.board = board || this.create(size);
-    this.length = Math.sqrt(size);
+  constructor(board?: Board) {
+    this.board = board || this.create();
     this.pieceMap = (() => {
-      return COLORS.reduce<Record<Colors, PieceMap<Size>>>((acc, curr) => {
-        acc[curr] = PIECE_TYPES.reduce<PieceMap<Size>>((acc, curr) => {
+      return COLORS.reduce<Record<Colors, PieceMap>>((acc, curr) => {
+        acc[curr] = PIECE_TYPES.reduce<PieceMap>((acc, curr) => {
           acc[curr] = [];
           return acc;
-        }, {} as PieceMap<Size>);
+        }, {} as PieceMap);
 
         return acc;
-      }, {} as Record<Colors, PieceMap<Size>>);
+      }, {} as Record<Colors, PieceMap>);
     })();
   }
 
-  create(size: Size): Board<Size> {
-    return Array(size)
+  create(): Board {
+    return Array(BOARD_SIZE)
       .fill(null)
-      .map(() => null) as Board<Size>;
+      .map(() => null) as Board;
   }
 
   init(board = this.board) {
-    if (board.length !== BOARD_SIZE) return;
-
     const length = Math.sqrt(board.length);
     const initPositions = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'] as const;
 
@@ -57,58 +52,90 @@ export default class Gameboard<Size extends number> {
     }
   }
 
-  pushToPieceMap(
-    pieceType: PieceType,
-    color: Colors,
-    squareIdx: SquareIdx<Size>
-  ) {
+  pushToPieceMap(pieceType: PieceType, color: Colors, squareIdx: SquareIdx) {
     this.pieceMap[color][pieceType].push(squareIdx);
   }
 
-  at(
-    square: Square<Files, EnumerateFromOne<typeof this.length>>,
-    board = this.board
+  moveInPieceMap(
+    pieceType: PieceType,
+    color: Colors,
+    start: SquareIdx,
+    end: SquareIdx
   ) {
-    if (!isSquare(board.length, square)) return;
-    const idx = convertSquareToIdx(square, board.length as Size);
+    this.pieceMap[color][pieceType] = this.pieceMap[color][pieceType].map(
+      (s) => {
+        if (s !== start) return s;
+        return end;
+      }
+    );
+  }
+
+  removeFromPieceMap(
+    pieceType: PieceType,
+    color: Colors,
+    squareIdx: SquareIdx
+  ) {
+    this.pieceMap[color][pieceType] = this.pieceMap[color][pieceType].filter(
+      (s) => s !== squareIdx
+    );
+  }
+
+  at(square: Square, board = this.board) {
+    if (!isSquare(square)) return;
+    const idx = convertSquareToIdx(square);
 
     return {
       get piece() {
         return board[idx];
       },
 
-      placePiece(piece: Piece) {
+      placePiece: (piece: Piece) => {
         board[idx] = piece;
+        this.pushToPieceMap(piece[1] as PieceType, piece[0] as Colors, idx);
       },
 
-      remove() {
+      remove: () => {
+        const piece = board[idx];
+        if (piece)
+          this.removeFromPieceMap(
+            piece[1] as PieceType,
+            piece[0] as Colors,
+            idx
+          );
         board[idx] = null;
       },
 
-      promote(newType: Exclude<PieceType, 'p'>) {
+      promote: (newType: Exclude<PieceType, 'p'>) => {
         const piece = board[idx];
         if (!piece) return;
         board[idx] = `${piece[0] as Colors}${newType}`;
+        this.removeFromPieceMap(piece[1] as PieceType, piece[0] as Colors, idx);
+        this.pushToPieceMap(newType, piece[0] as Colors, idx);
       }
     };
   }
 
-  from(
-    s1: Square<Files, EnumerateFromOne<typeof this.length>>,
-    board = this.board
-  ) {
-    if (!isSquare(this.board.length, s1)) return;
+  from(s1: Square, board = this.board) {
+    if (!isSquare(s1)) return;
     return {
-      to: (s2: Square<Files, EnumerateFromOne<Size>>) => {
-        if (!isSquare(this.board.length, s2)) return;
+      to: (s2: Square) => {
+        if (!isSquare(s2)) return;
         if (s1 === s2) return;
 
-        const s1Idx = convertSquareToIdx(s1, board.length as Size);
-        const s2Idx = convertSquareToIdx(s2, board.length as Size);
+        const s1Idx = convertSquareToIdx(s1);
+        const s2Idx = convertSquareToIdx(s2);
 
         const piece = board[s1Idx];
+        if (!piece) return;
         board[s1Idx] = null;
         board[s2Idx] = piece;
+
+        this.moveInPieceMap(
+          piece[1] as PieceType,
+          piece[0] as Colors,
+          s1Idx,
+          s2Idx
+        );
       }
     };
   }
