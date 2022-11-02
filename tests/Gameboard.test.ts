@@ -45,31 +45,31 @@ test('init works correctly', () => {
 
 describe('"at" interface works correctly', () => {
   const gameboard = new Gameboard();
-  test('placePiece places a piece and pushes it to the piece map', () => {
-    gameboard.at('a1')?.placePiece('wr');
+  test('place places a piece and pushes it to the piece map', () => {
+    gameboard.at('a1')?.place('wr');
 
-    expect(gameboard.board[0] === 'wr');
+    expect(gameboard.board[0]).toBe('wr');
     expect(gameboard.pieceMap.w.r).toEqual([0]);
   });
 
-  test('remove removes the piece from the board and piece map', () => {
+  test('remove removes the piece from the board and piece map, if there are no more of that piece type the property is deleted', () => {
     gameboard.at('a1')?.remove();
 
-    expect(gameboard.board[0] === null);
-    expect(gameboard.pieceMap.w.r).toEqual([]);
+    expect(gameboard.board[0]).toBe(null);
+    expect(gameboard.pieceMap.w.r).toEqual(undefined);
   });
 
   test('promote promotes the piece, removes the square from the piece map of the old piece type and adds it to the piece map of the new piece type', () => {
-    gameboard.at('a1')?.placePiece('bp');
+    gameboard.at('a1')?.place('bp');
     gameboard.at('a1')?.promote('q');
 
     expect(gameboard.board[0]).toBe('bq');
-    expect(gameboard.pieceMap.b.p.length === 0);
+    expect(gameboard.pieceMap.b.p).toBe(undefined);
     expect(gameboard.pieceMap.b.q).toEqual([0]);
   });
 
   test('piece getter works', () => {
-    gameboard.at('e5')?.placePiece('wr');
+    gameboard.at('e5')?.place('wr');
     expect(gameboard.at('e5')?.piece).toBe('wr');
   });
 });
@@ -77,7 +77,7 @@ describe('"at" interface works correctly', () => {
 test('from().to moves the piece on the board and on the piece map', () => {
   const gameboard = new Gameboard();
 
-  gameboard.at('a1')?.placePiece('bp');
+  gameboard.at('a1')?.place('bp');
 
   gameboard.from('a1')?.to('a2');
 

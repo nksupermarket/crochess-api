@@ -22,7 +22,7 @@ export function isFiles(char: string): char is Files {
   return !!FILES.find((v) => v === char);
 }
 
-export function isSquare(value: string): value is Square {
+export function isSquare(value: any): value is Square {
   if (value.length > 2) return false;
   if (!isFiles(value[0])) return false;
   if (FILES.indexOf(value[0]) >= BOARD_LENGTH) return false;

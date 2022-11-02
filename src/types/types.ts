@@ -2,8 +2,6 @@ import {
   COLORS,
   FILES,
   PIECE_TYPES,
-  POINT_TO_PIECE_MAP,
-  PIECE_TO_POINT_MAP,
   BOARD_SIZE,
   BOARD_LENGTH,
   VECTORS
@@ -27,9 +25,6 @@ type _TupleOf<T, N extends number, R extends T[]> = R['length'] extends N
   : _TupleOf<T, N, [T, ...R]>;
 
 export type Line = 'xy' | 'diagonal';
-
-export type PieceAsPoint =
-  typeof PIECE_TO_POINT_MAP[keyof typeof PIECE_TO_POINT_MAP];
 
 export type Board = Tuple<Piece | null, typeof BOARD_SIZE>;
 export type Square = `${typeof FILES[number]}${EnumerateFromOne<
@@ -66,6 +61,8 @@ export type Permutations<
 > = U extends string ? U | `${U}${Permutations<Exclude<T, U>>}` : never;
 
 export type PieceMap = Record<PieceType, SquareIdx[]>;
+
+export type AllPieceMap = Record<Colors, PieceMap>;
 
 export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'>;
 

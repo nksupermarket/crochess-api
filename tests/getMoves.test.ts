@@ -1,11 +1,13 @@
 import Gameboard from '../src/classes/Gameboard';
+import { Square } from '../src/types/types';
 import {} from '../src/utils/constants';
 import {
   getPieceMoves,
   getPawnMoves,
-  exportedForTesting
+  exportedForTesting,
+  getLegalKingMoves
 } from '../src/utils/getMoves';
-import { convertSquareToIdx } from '../src/utils/square';
+import { convertIdxToSquare, convertSquareToIdx } from '../src/utils/square';
 
 // wrote this function because I changed the board implementation from a 2d array to a 1d array. Instead of manually converting each expected array I wrote this function instead
 function convertArrToIdx(arr: number[][]) {
@@ -53,14 +55,49 @@ describe('getPieceMoves works', () => {
         [27, 57, 50, 43, 29, 22, 15].sort()
       );
     });
+
+    it('can capture own pieces with flag', () => {
+      const board = new Gameboard().board;
+      board[36] = 'wb';
+      board[27] = 'bn';
+      board[45] = 'wp';
+
+      expect(getPieceMoves('b', board, 36, undefined, true).sort()).toEqual(
+        [27, 45, 57, 50, 43, 29, 22, 15].sort()
+      );
+    });
   });
 
   describe('knight moves works', () => {
-    const board = new Gameboard().board;
+    test('works on an empty board', () => {
+      const board = new Gameboard().board;
 
-    expect(getPieceMoves('n', board, 35).sort()).toEqual(
-      [18, 20, 25, 29, 45, 41, 50, 52].sort()
-    );
+      expect(getPieceMoves('n', board, 35).sort()).toEqual(
+        [18, 20, 25, 29, 45, 41, 50, 52].sort()
+      );
+    });
+
+    it('cannot capture own pieces without flag', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at(18).place('wp');
+      gameboard.at(35).place('wn');
+
+      expect(getPieceMoves('n', gameboard.board, 35).sort()).toEqual(
+        [20, 25, 29, 45, 41, 50, 52].sort()
+      );
+    });
+
+    it('includes own pieces with flag', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at(18).place('wp');
+      gameboard.at(35).place('wn');
+
+      expect(
+        getPieceMoves('n', gameboard.board, 35, undefined, true).sort()
+      ).toEqual([18, 20, 25, 29, 45, 41, 50, 52].sort());
+    });
   });
 
   describe('rook moves works', () => {
@@ -148,6 +185,28 @@ describe('getPieceMoves works', () => {
         ]).sort()
       );
     });
+
+    it('can capture own piece with flag', () => {
+      const board = new Gameboard().board;
+      board[36] = 'wr';
+      board[35] = 'bn';
+      board[44] = 'wp';
+
+      expect(getPieceMoves('r', board, 36, undefined, true).sort()).toEqual(
+        convertArrToIdx([
+          [3, 4],
+          [2, 4],
+          [1, 4],
+          [0, 4],
+          [4, 3],
+          [4, 5],
+          [4, 6],
+          [4, 7]
+        ])
+          .concat([44])
+          .sort()
+      );
+    });
   });
 
   test('queen moves works', () => {
@@ -211,7 +270,7 @@ describe('getPawnMoves works', () => {
     );
   });
 
-  it('works when pawn is on start square', () => {
+  test('pawns can jump two squares on their first move', () => {
     expect(getPawnMoves(board, 'w', 12).sort()).toEqual(
       convertArrToIdx([
         [3, 4],
@@ -292,18 +351,18 @@ describe('isPiecePinned', () => {
 
   test('works on y axis', () => {
     const gameboard = new Gameboard();
-    gameboard.at(convertSquareToIdx('e2'))?.placePiece('wp');
-    gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
-    gameboard.at(convertSquareToIdx('e8'))?.placePiece('bq');
+    gameboard.at(convertSquareToIdx('e2'))?.place('wp');
+    gameboard.at(convertSquareToIdx('e1'))?.place('wk');
+    gameboard.at(convertSquareToIdx('e8'))?.place('bq');
 
     expect(isPiecePinned(12, 4, 'b', gameboard.board)).toBe(8);
   });
 
   test('works on x axis', () => {
     const gameboard = new Gameboard();
-    gameboard.at(convertSquareToIdx('b1'))?.placePiece('wp');
-    gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
-    gameboard.at(convertSquareToIdx('a1'))?.placePiece('bq');
+    gameboard.at(convertSquareToIdx('b1'))?.place('wp');
+    gameboard.at(convertSquareToIdx('e1'))?.place('wk');
+    gameboard.at(convertSquareToIdx('a1'))?.place('bq');
 
     expect(isPiecePinned(1, 4, 'b', gameboard.board)).toBe(-1);
   });
@@ -311,33 +370,33 @@ describe('isPiecePinned', () => {
   describe('works on diagonals', () => {
     test('upper left', () => {
       const gameboard = new Gameboard();
-      gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
-      gameboard.at(convertSquareToIdx('d2'))?.placePiece('wp');
-      gameboard.at(convertSquareToIdx('b4'))?.placePiece('bq');
+      gameboard.at(convertSquareToIdx('e1'))?.place('wk');
+      gameboard.at(convertSquareToIdx('d2'))?.place('wp');
+      gameboard.at(convertSquareToIdx('b4'))?.place('bq');
 
       expect(isPiecePinned(11, 4, 'b', gameboard.board)).toBe(7);
     });
     test('upper right', () => {
       const gameboard = new Gameboard();
-      gameboard.at(convertSquareToIdx('e1'))?.placePiece('wk');
-      gameboard.at(convertSquareToIdx('f2'))?.placePiece('wp');
-      gameboard.at(convertSquareToIdx('h4'))?.placePiece('bq');
+      gameboard.at(convertSquareToIdx('e1'))?.place('wk');
+      gameboard.at(convertSquareToIdx('f2'))?.place('wp');
+      gameboard.at(convertSquareToIdx('h4'))?.place('bq');
 
       expect(isPiecePinned(13, 4, 'b', gameboard.board)).toBe(9);
     });
     test('bottom left', () => {
       const gameboard = new Gameboard();
-      gameboard.at(convertSquareToIdx('e4'))?.placePiece('wk');
-      gameboard.at(convertSquareToIdx('d3'))?.placePiece('wr');
-      gameboard.at(convertSquareToIdx('b1'))?.placePiece('bb');
+      gameboard.at(convertSquareToIdx('e4'))?.place('wk');
+      gameboard.at(convertSquareToIdx('d3'))?.place('wr');
+      gameboard.at(convertSquareToIdx('b1'))?.place('bb');
 
       expect(isPiecePinned(19, 28, 'b', gameboard.board)).toBe(-9);
     });
     test('bottom right', () => {
       const gameboard = new Gameboard();
-      gameboard.at(convertSquareToIdx('e4'))?.placePiece('wk');
-      gameboard.at(convertSquareToIdx('f3'))?.placePiece('wr');
-      gameboard.at(convertSquareToIdx('h1'))?.placePiece('bb');
+      gameboard.at(convertSquareToIdx('e4'))?.place('wk');
+      gameboard.at(convertSquareToIdx('f3'))?.place('wr');
+      gameboard.at(convertSquareToIdx('h1'))?.place('bb');
 
       expect(isPiecePinned(21, 28, 'b', gameboard.board)).toBe(-7);
     });
@@ -381,5 +440,242 @@ describe('getSquaresBetweenTwoSquares works', () => {
         .map((v) => Number(v))
         .sort()
     ).toEqual([22].sort());
+  });
+});
+
+describe('getLegalKingMoves works', () => {
+  test('controlled squares are not legal', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('e8')).place('bk');
+    gameboard.at(convertSquareToIdx('f1')).place('wq');
+    gameboard.at(convertSquareToIdx('d1')).place('wr');
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual([convertSquareToIdx('e7')]);
+  });
+
+  test('squares xrayed by piece are not legal', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('d7')).place('bk');
+    gameboard.at(convertSquareToIdx('b5')).place('wb');
+
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual(
+      getPieceMoves('k', gameboard.board, gameboard.pieceMap.b.k[0]).filter(
+        (s) => s !== convertSquareToIdx('c6') && s !== convertSquareToIdx('e8')
+      )
+    );
+  });
+
+  it('doesnt show squares controlled by pawns', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('d7')).place('bk');
+    gameboard.at(convertSquareToIdx('b5')).place('wp');
+
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual(
+      getPieceMoves('k', gameboard.board, gameboard.pieceMap.b.k[0]).filter(
+        (s) => s !== convertSquareToIdx('c6')
+      )
+    );
+  });
+
+  it('doesnt include squares protected by rooks', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('e8')).place('bk');
+    gameboard.at(convertSquareToIdx('f8')).place('wr');
+    gameboard.at(convertSquareToIdx('f1')).place('wq');
+    gameboard.at(convertSquareToIdx('d1')).place('wr');
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual([convertSquareToIdx('e7')]);
+  });
+
+  it('doesnt include squares protected by bishops', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('e8')).place('bk');
+    gameboard.at(convertSquareToIdx('f8')).place('wr');
+    gameboard.at(convertSquareToIdx('g7')).place('wb');
+    gameboard.at(convertSquareToIdx('d1')).place('wr');
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual([convertSquareToIdx('e7')]);
+  });
+
+  it('doesnt include squares protected by queens', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('e8')).place('bk');
+    gameboard.at(convertSquareToIdx('f8')).place('wr');
+    gameboard.at(convertSquareToIdx('g8')).place('wq');
+    gameboard.at(convertSquareToIdx('d1')).place('wr');
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual([convertSquareToIdx('e7')]);
+  });
+
+  it('doesnt include squares protected by pawns', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at(convertSquareToIdx('e8')).place('bk');
+    gameboard.at(convertSquareToIdx('f8')).place('wr');
+    gameboard.at(convertSquareToIdx('g7')).place('wp');
+    gameboard.at(convertSquareToIdx('d1')).place('wr');
+    expect(
+      getLegalKingMoves(
+        gameboard.pieceMap.b.k[0],
+        gameboard.pieceMap.w,
+        {
+          k: false,
+          q: false
+        },
+        gameboard.board
+      )
+    ).toEqual([convertSquareToIdx('e7')]);
+  });
+
+  describe('castling stuff', () => {
+    it('includes castle squares', () => {
+      const gameboard = new Gameboard();
+
+      expect(
+        getLegalKingMoves(
+          convertSquareToIdx('e1'),
+          gameboard.pieceMap.b,
+          {
+            k: true,
+            q: true
+          },
+          gameboard.board
+        ).sort()
+      ).toEqual(
+        ['e2', 'f2', 'd2', 'd1', 'f1', 'g1', 'c1']
+          .map((s) => convertSquareToIdx(s as Square))
+          .sort()
+      );
+    });
+
+    it('doesnt include castle squares when square is threatened', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('g5').place('br');
+      gameboard.at('b2').place('bp');
+
+      expect(
+        getLegalKingMoves(
+          convertSquareToIdx('e1'),
+          gameboard.pieceMap.b,
+          {
+            k: true,
+            q: true
+          },
+          gameboard.board
+        ).sort()
+      ).toEqual(
+        ['e2', 'f2', 'd2', 'd1', 'f1']
+          .map((s) => convertSquareToIdx(s as Square))
+          .sort()
+      );
+    });
+
+    it('doesnt include castle squares when square in between is threatened', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('f5').place('br');
+      gameboard.at('c2').place('bp');
+
+      expect(
+        getLegalKingMoves(
+          convertSquareToIdx('e1'),
+          gameboard.pieceMap.b,
+          {
+            k: true,
+            q: true
+          },
+          gameboard.board
+        ).sort()
+      ).toEqual(
+        ['e2', 'd2'].map((s) => convertSquareToIdx(s as Square)).sort()
+      );
+    });
+
+    it.only('doesnt include castle squares when castle squares are occupied', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e1').place('wk');
+      gameboard.at('d1').place('wq');
+      gameboard.at('g1').place('wn');
+
+      expect(
+        getLegalKingMoves(
+          convertSquareToIdx('e1'),
+          gameboard.pieceMap.b,
+          {
+            k: true,
+            q: true
+          },
+          gameboard.board
+        ).sort()
+      ).toEqual(
+        ['e2', 'f2', 'd2', 'f1']
+          .map((s) => convertSquareToIdx(s as Square))
+          .sort()
+      );
+    });
   });
 });

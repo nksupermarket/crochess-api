@@ -11,18 +11,31 @@ import {
 } from '../types/types';
 import { convertIdxToSquare } from './square';
 import { isFenStr } from './typeCheck';
+import { BOARD_LENGTH } from './constants';
 
 export function convertFromFen(
   fen: FenStr,
-  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx) => void
+  pushToPieceMap?: (
+    pieceType: PieceType,
+    color: Colors,
+    squareIdx: SquareIdx
+  ) => void
 ): Game;
 export function convertFromFen(
   fen: string,
-  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx) => void
+  pushToPieceMap?: (
+    pieceType: PieceType,
+    color: Colors,
+    squareIdx: SquareIdx
+  ) => void
 ): undefined;
 export function convertFromFen(
   fen: string,
-  cb?: (pieceType: PieceType, color: Colors, squareIdx: SquareIdx) => void
+  pushToPieceMap?: (
+    pieceType: PieceType,
+    color: Colors,
+    squareIdx: SquareIdx
+  ) => void
 ) {
   if (!isFenStr(fen)) return;
 
@@ -37,37 +50,35 @@ export function convertFromFen(
   ] = split;
 
   // convert board
+  // need to reverse the array because fen string starts with the 8th rank first
   const splitIntoRanks = boardStr.split('/');
   splitIntoRanks.reverse();
-  const board = splitIntoRanks.reduce<(Piece | null)[]>((acc, curr, idx) => {
-    // iterate over the string representation of the rank
-    // for each character, adjust the rank accordingly
-    // idx represents rank
-    let rank: (Piece | null)[] = [];
-    for (let i = 0; i < curr.length; i++) {
-      if (Number(curr[i])) {
-        rank = rank.concat(Array(Number(curr[i])).fill(null));
-        continue;
+
+  const board = splitIntoRanks
+    // need to split each str because each str represent a whole rank
+    .map((str) => str.split(''))
+    .flat()
+    .reduce<(Piece | null)[]>((acc, curr) => {
+      // iterate over the string representation of the rank
+
+      if (curr === '/') return acc;
+
+      if (Number(curr)) {
+        return acc.concat(Array(Number(curr)).fill(null));
       }
 
-      // curr[i] represents a piece
-      const pieceType = curr[i] as PieceType;
+      // curr represents a piece
+      const pieceType = curr as PieceType;
       const piece =
         pieceType.toLowerCase() === pieceType
           ? (`b${pieceType}` as Piece)
           : (`w${pieceType.toLowerCase()}` as Piece);
-      rank.push(piece);
-      cb &&
-        cb(
-          pieceType,
-          piece[0] as Colors,
-          ((idx - 1) * splitIntoRanks.length + rank.length - 1) as SquareIdx
-        );
-    }
+      pushToPieceMap &&
+        pushToPieceMap(pieceType, piece[0] as Colors, acc.length as SquareIdx);
 
-    acc = acc.concat(rank);
-    return acc;
-  }, []);
+      acc.push(piece);
+      return acc;
+    }, []);
 
   return new Game({
     halfmoves,
@@ -81,14 +92,13 @@ export function convertFromFen(
 
 export function convertToFen(game: Game) {
   let fen = '';
-  const length = Math.sqrt(game.board.length);
   // need to iterate over twice
   // first loop for ranks
   // inner loop for files
-  for (let rank = length - 1; rank >= 0; rank--) {
+  for (let rank = BOARD_LENGTH - 1; rank >= 0; rank--) {
     let rankStr = '';
-    for (let file = 0; file < length; file++) {
-      const idx = rank * length + file;
+    for (let file = 0; file < BOARD_LENGTH; file++) {
+      const idx = rank * BOARD_LENGTH + file;
       if (
         // square is empty
         !game.board[idx]
