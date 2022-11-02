@@ -62,7 +62,6 @@ function getLineMoves({
   vectors,
   range = BOARD_LENGTH,
   canCapture = true,
-  onlyCapture = false,
   includeOwnPieces = false
 }: {
   board: Board;
@@ -70,14 +69,13 @@ function getLineMoves({
   vectors: Vector[];
   range?: Range;
   canCapture?: boolean;
-  onlyCapture?: boolean;
   includeOwnPieces?: boolean;
 }): SquareIdx[] {
   const moves: SquareIdx[] = [];
   vectors.forEach((d) => {
     traverseAlongVector(d, start, range, (move, breakLoop) => {
       const piece = board[move];
-      if (!piece && !onlyCapture) {
+      if (!piece) {
         moves.push(move);
       } else if (
         // square has piece that isn't same color as piece moving
@@ -204,8 +202,7 @@ export const getPawnMoves = (
     vectors: pinVector
       ? captureVectors.filter((v) => v === pinVector || v === -pinVector)
       : captureVectors,
-    range: 1,
-    onlyCapture: true
+    range: 1
   }).filter((m) => {
     const piece = board[m];
     // check if it's the same as enpassant pIdx
@@ -236,16 +233,12 @@ export function getChecks(
       XY_VECTORS[i],
       kIdx,
       BOARD_LENGTH,
-      (pIdx, breakLoop, distance) => {
+      (pIdx, breakLoop) => {
         const piece = board[pIdx];
-        if (
-          piece === `${oppColor}q` ||
-          piece === `${oppColor}r` ||
-          (piece === `${oppColor}k` && distance === 1)
-        ) {
+        if (piece === `${oppColor}q` || piece === `${oppColor}r`) {
           checks.push(pIdx as SquareIdx);
           breakLoop();
-        }
+        } else if (piece) breakLoop();
       }
     );
   }
@@ -257,17 +250,21 @@ export function getChecks(
       BOARD_LENGTH,
       (pIdx, breakLoop, distance) => {
         const piece = board[pIdx];
+
         if (
           piece === `${oppColor}q` ||
           piece === `${oppColor}b` ||
-          (piece === `${oppColor}k` && distance === 1) ||
-          (piece === `${oppColor}p` && distance === 1 && oppColor === 'w'
-            ? DIAGONAL_VECTORS[i] > 0
-            : DIAGONAL_VECTORS[i] < 0)
+          // pawn capture
+          (piece === `${oppColor}p` &&
+            distance === 1 &&
+            // need to reverse direction because you start from the square of the piece
+            (oppColor === 'w'
+              ? DIAGONAL_VECTORS[i] < 0
+              : DIAGONAL_VECTORS[i] > 0))
         ) {
           checks.push(pIdx as SquareIdx);
           breakLoop();
-        }
+        } else if (piece) breakLoop();
       }
     );
   }

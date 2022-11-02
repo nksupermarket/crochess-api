@@ -5,7 +5,8 @@ import {
   getPieceMoves,
   getPawnMoves,
   exportedForTesting,
-  getLegalKingMoves
+  getLegalKingMoves,
+  getChecks
 } from '../src/utils/getMoves';
 import { convertIdxToSquare, convertSquareToIdx } from '../src/utils/square';
 
@@ -654,7 +655,7 @@ describe('getLegalKingMoves works', () => {
       );
     });
 
-    it.only('doesnt include castle squares when castle squares are occupied', () => {
+    it('doesnt include castle squares when castle squares are occupied', () => {
       const gameboard = new Gameboard();
 
       gameboard.at('e1').place('wk');
@@ -676,6 +677,121 @@ describe('getLegalKingMoves works', () => {
           .map((s) => convertSquareToIdx(s as Square))
           .sort()
       );
+    });
+  });
+});
+
+describe('get checks work', () => {
+  test('knight checks', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('e4').place('wk');
+    gameboard.at('c3').place('bn');
+    gameboard.at('c5').place('bn');
+    expect(
+      getChecks('b', convertSquareToIdx('e4'), gameboard.board).sort()
+    ).toEqual(['c3', 'c5'].map((s) => convertSquareToIdx(s as Square)).sort());
+
+    gameboard.at('c3').remove();
+    gameboard.at('c5').remove();
+    gameboard.at('d2').place('bn');
+    gameboard.at('d6').place('bn');
+    expect(
+      getChecks('b', convertSquareToIdx('e4'), gameboard.board).sort()
+    ).toEqual(['d2', 'd6'].map((s) => convertSquareToIdx(s as Square)).sort());
+
+    gameboard.at('d2').remove();
+    gameboard.at('d6').remove();
+    gameboard.at('f2').place('bn');
+    gameboard.at('f6').place('bn');
+    expect(
+      getChecks('b', convertSquareToIdx('e4'), gameboard.board).sort()
+    ).toEqual(['f2', 'f6'].map((s) => convertSquareToIdx(s as Square)).sort());
+
+    gameboard.at('f2').remove();
+    gameboard.at('f6').remove();
+    gameboard.at('g3').place('bn');
+    gameboard.at('g5').place('bn');
+    expect(
+      getChecks('b', convertSquareToIdx('e4'), gameboard.board).sort()
+    ).toEqual(['g3', 'g5'].map((s) => convertSquareToIdx(s as Square)).sort());
+  });
+
+  describe('pawn checks', () => {
+    test('white pawn black king', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e5').place('bk');
+      gameboard.at('d4').place('wp');
+      gameboard.at('f4').place('wp');
+
+      expect(
+        getChecks('w', convertSquareToIdx('e5'), gameboard.board).sort()
+      ).toEqual(
+        ['d4', 'f4'].map((s) => convertSquareToIdx(s as Square)).sort()
+      );
+    });
+
+    test('black pawn white king', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e5').place('wk');
+      gameboard.at('d6').place('bp');
+      gameboard.at('f6').place('bp');
+
+      expect(
+        getChecks('b', convertSquareToIdx('e5'), gameboard.board).sort()
+      ).toEqual(
+        ['d6', 'f6'].map((s) => convertSquareToIdx(s as Square)).sort()
+      );
+    });
+  });
+
+  describe.only('queen checks', () => {
+    test('on a diagonal', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e5').place('wk');
+      gameboard.at('b8').place('bq');
+
+      expect(getChecks('b', convertSquareToIdx('e5'), gameboard.board)).toEqual(
+        ['b8'].map((s) => convertSquareToIdx(s as Square))
+      );
+    });
+
+    it('shouldnt include blocked checks on a diagonal', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e5').place('wk');
+      gameboard.at('b8').place('bq');
+      gameboard.at('c7').place('wr');
+
+      expect(
+        getChecks('b', convertSquareToIdx('e5'), gameboard.board).length
+      ).toEqual(0);
+    });
+
+    test('on a file', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e5').place('wk');
+      gameboard.at('e8').place('bq');
+
+      expect(getChecks('b', convertSquareToIdx('e5'), gameboard.board)).toEqual(
+        ['e8'].map((s) => convertSquareToIdx(s as Square))
+      );
+    });
+
+    it('shouldnt included blocked checks on a file', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('e5').place('wk');
+      gameboard.at('e8').place('bq');
+      gameboard.at('e7').place('wr');
+
+      expect(
+        getChecks('b', convertSquareToIdx('e5'), gameboard.board).length
+      ).toEqual(0);
     });
   });
 });
