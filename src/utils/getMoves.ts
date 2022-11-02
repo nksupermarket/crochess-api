@@ -453,6 +453,8 @@ export function getLegalMoves(
 
   // check length is 1
   const block = getSquaresBetweenTwoSquares(kingIdx, check[0]) as SquareMap;
+  // can also capture piece
+  block[check[0]] = true;
   return moves.filter((s) => s in block);
 }
 

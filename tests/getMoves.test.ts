@@ -6,7 +6,8 @@ import {
   getPawnMoves,
   exportedForTesting,
   getLegalKingMoves,
-  getChecks
+  getChecks,
+  getLegalMoves
 } from '../src/utils/getMoves';
 import { convertIdxToSquare, convertSquareToIdx } from '../src/utils/square';
 
@@ -747,7 +748,7 @@ describe('get checks work', () => {
     });
   });
 
-  describe.only('queen checks', () => {
+  describe('queen checks', () => {
     test('on a diagonal', () => {
       const gameboard = new Gameboard();
 
@@ -793,5 +794,126 @@ describe('get checks work', () => {
         getChecks('b', convertSquareToIdx('e5'), gameboard.board).length
       ).toEqual(0);
     });
+  });
+});
+
+describe.only('getLegalMoves works', () => {
+  test('pieces have no moves if there are two checks', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('a1').place('wk');
+    gameboard.at('h8').place('bb');
+    gameboard.at('a8').place('br');
+    gameboard.at('h1').place('wr');
+
+    expect(
+      getLegalMoves(
+        'r',
+        gameboard.board,
+        'w',
+        convertSquareToIdx('h1'),
+        0,
+        ['h8', 'a8'].map((s) => convertSquareToIdx(s as Square))
+      ).length
+    ).toBe(0);
+  });
+
+  test('pieces have no moves if there is one check and they cant block or capture', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('a1').place('wk');
+    gameboard.at('g7').place('bb');
+    gameboard.at('h1').place('wr');
+
+    expect(
+      getLegalMoves(
+        'r',
+        gameboard.board,
+        'w',
+        convertSquareToIdx('h1'),
+        0,
+        ['g7'].map((s) => convertSquareToIdx(s as Square))
+      ).length
+    ).toBe(0);
+  });
+
+  test('pieces can capture check', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('a1').place('wk');
+    gameboard.at('h8').place('bb');
+    gameboard.at('h1').place('wr');
+
+    expect(
+      getLegalMoves(
+        'r',
+        gameboard.board,
+        'w',
+        convertSquareToIdx('h1'),
+        0,
+        ['h8'].map((s) => convertSquareToIdx(s as Square))
+      )
+    ).toEqual([63]);
+  });
+
+  test('pieces can block', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('a1').place('wk');
+    gameboard.at('h8').place('bb');
+    gameboard.at('d1').place('wn');
+
+    expect(
+      getLegalMoves(
+        'n',
+        gameboard.board,
+        'w',
+        convertSquareToIdx('d1'),
+        0,
+        ['h8'].map((s) => convertSquareToIdx(s as Square))
+      ).sort()
+    ).toEqual([convertSquareToIdx('b2'), convertSquareToIdx('c3')].sort());
+  });
+
+  test('pawns can block enPassant', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('h1').place('wk');
+    gameboard.at('a8').place('bb');
+    gameboard.at('b5').place('wp');
+    gameboard.at('c5').place('bp');
+
+    expect(
+      getLegalMoves(
+        'p',
+        gameboard.board,
+        'w',
+        convertSquareToIdx('b5'),
+        7,
+        ['a8'].map((s) => convertSquareToIdx(s as Square)),
+        convertSquareToIdx('c6')
+      )
+    ).toEqual([convertSquareToIdx('c6')]);
+  });
+
+  test('pieces can only move in the direction/opposite direction of the pin', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('e1').place('wk');
+    gameboard.at('e5').place('br');
+    gameboard.at('e3').place('wq');
+
+    expect(
+      getLegalMoves(
+        'q',
+        gameboard.board,
+        'w',
+        convertSquareToIdx('e3'),
+        convertSquareToIdx('e1'),
+        []
+      ).sort()
+    ).toEqual(
+      ['e2', 'e4', 'e5'].map((s) => convertSquareToIdx(s as Square)).sort()
+    );
   });
 });
