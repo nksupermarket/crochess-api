@@ -45,7 +45,7 @@ export default class Game extends Gameboard {
     fullmoves?: string | number;
     activeColor?: Colors;
     board?: Board;
-  }) {
+  } = {}) {
     super(board);
     this.castleRights = COLORS.reduce<Record<Colors, CastleRights>>(
       (acc, curr) => {
@@ -78,9 +78,10 @@ export default class Game extends Gameboard {
     return this._checks;
   }
 
-  at(idx: SquareIdx, board = this.board) {
+  at = (s: SquareIdx | Square, board = this.board) => {
+    const idx: SquareIdx = typeof s === 'string' ? convertSquareToIdx(s) : s;
     return {
-      ...super.at(idx, board),
+      ...super.at(s, board),
       moves: () => {
         const piece = board[idx];
         if (!piece) return null;
@@ -105,20 +106,24 @@ export default class Game extends Gameboard {
         }
       }
     };
-  }
+  };
 
-  makeMove(from: Square, to: Square, promote?: Exclude<PieceType, 'k' | 'p'>) {
+  makeMove = (
+    from: Square,
+    to: Square,
+    promote?: Exclude<PieceType, 'k' | 'p'>
+  ) => {
     const fromIdx = convertSquareToIdx(from);
     const toIdx = convertSquareToIdx(to);
 
-    const piece = this.at(fromIdx).piece;
+    const piece = this.board[fromIdx];
     if (!piece) return;
     if (piece[0] !== this.activeColor) return;
-    const valid = this.at(fromIdx)?.moves()?.includes(toIdx);
+    const valid = this.at(fromIdx).moves()?.includes(toIdx);
     if (!valid) return;
 
     // measures halfmoves since last capture or pawn advance
-    if (!!this.board[toIdx] || piece[1] === 'p') this.halfmoves++;
+    if (!this.board[toIdx] || piece[1] !== 'p') this.halfmoves++;
 
     switch (piece[1]) {
       case 'k': {
@@ -129,7 +134,7 @@ export default class Game extends Gameboard {
         };
 
         // move rook if its a castle move
-        const distance = fromIdx - toIdx;
+        const distance = toIdx - fromIdx;
         if (distance === -2) {
           this.castle(this.activeColor, 'q');
         }
@@ -168,8 +173,8 @@ export default class Game extends Gameboard {
         this.from(fromIdx).to(toIdx);
         const newRank = Math.floor(toIdx / BOARD_LENGTH);
         const promoteRank = this.activeColor === 'w' ? 7 : 0;
-        if (!promote) return;
-        if (newRank === promoteRank) this.at(toIdx).promote(promote);
+        if (!promote) break;
+        else if (newRank === promoteRank) this.at(toIdx).promote(promote);
 
         break;
       }
@@ -183,9 +188,9 @@ export default class Game extends Gameboard {
     if (this.activeColor === 'b') this.fullmoves++;
     this.activeColor = OPP_COLOR[this.activeColor];
     this._checks = null;
-  }
+  };
 
-  isGameOver(fenList: FenStr[]) {
+  isGameOver = (fenList: FenStr[]) => {
     const gameOver = {
       checkmate: false,
       unforcedDraw: false,
@@ -274,5 +279,5 @@ export default class Game extends Gameboard {
     }
 
     return gameOver;
-  }
+  };
 }

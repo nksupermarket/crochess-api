@@ -60,7 +60,8 @@ export type Permutations<
   U extends string = T
 > = U extends string ? U | `${U}${Permutations<Exclude<T, U>>}` : never;
 
-export type PieceMap = Record<PieceType, SquareIdx[]>;
+export type PieceMap = Partial<Record<Exclude<PieceType, 'k'>, SquareIdx[]>> &
+  Record<'k', SquareIdx[]>;
 
 export type AllPieceMap = Record<Colors, PieceMap>;
 

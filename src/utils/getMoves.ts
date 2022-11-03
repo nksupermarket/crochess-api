@@ -94,6 +94,34 @@ function getLineMoves({
   return moves;
 }
 
+function getValidKnightJumps(pIdx: SquareIdx) {
+  const rank = Math.floor(pIdx / BOARD_LENGTH);
+  const file = pIdx % BOARD_LENGTH;
+
+  return KNIGHT_JUMPS.filter((offset) => {
+    switch (offset) {
+      case -17:
+        return file !== 0 && rank >= 2;
+      case -15:
+        return file !== 7 && rank >= 2;
+      case -10:
+        return file >= 2 && rank >= 1;
+      case -6:
+        return file <= 5 && rank >= 1;
+      case 6:
+        return file >= 2 && rank <= 6;
+      case 10:
+        return file <= 5 && rank <= 6;
+      case 15:
+        return file !== 0 && rank <= 5;
+      case 17:
+        return file !== 7 && rank <= 5;
+      default:
+        return true;
+    }
+  });
+}
+
 export const getPieceMoves = (
   pieceType: Exclude<PieceType, 'p'>,
   board: Board,
@@ -109,9 +137,11 @@ export const getPieceMoves = (
     case 'n': {
       if (pinVector) return [];
 
-      return KNIGHT_JUMPS.reduce<SquareIdx[]>((acc, curr) => {
+      return getValidKnightJumps(pIdx).reduce<SquareIdx[]>((acc, curr) => {
         const move = pIdx + curr;
         if (!isSquareIdx(move)) return acc;
+        // need to check move doesnt wrap around board
+
         if (
           !board[move] ||
           includeOwnPieces ||
@@ -222,8 +252,9 @@ export function getChecks(
   board: Board
 ): Tuple<SquareIdx, 0 | 1 | 2> {
   const checks: SquareIdx[] = [];
-  for (let i = 0; i < KNIGHT_JUMPS.length; i++) {
-    const pIdx = kIdx + KNIGHT_JUMPS[i];
+  const validKnightJumps = getValidKnightJumps(kIdx);
+  for (let i = 0; i < validKnightJumps.length; i++) {
+    const pIdx = kIdx + validKnightJumps[i];
     const piece = board[pIdx];
     if (piece === `${oppColor}n`) checks.push(pIdx as SquareIdx);
   }

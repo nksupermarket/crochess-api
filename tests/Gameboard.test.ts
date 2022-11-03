@@ -43,11 +43,19 @@ test('init works correctly', () => {
   expect(gameboard.board[55]).toEqual('bp');
 });
 
+test('pieceMap initiates correctly', () => {
+  const b1 = new Gameboard();
+  b1.init();
+
+  const b2 = new Gameboard(b1.board);
+
+  expect(b2.pieceMap).toEqual(b1.pieceMap);
+});
+
 describe('"at" interface works correctly', () => {
   const gameboard = new Gameboard();
   test('place places a piece and pushes it to the piece map', () => {
     gameboard.at('a1')?.place('wr');
-
     expect(gameboard.board[0]).toBe('wr');
     expect(gameboard.pieceMap.w.r).toEqual([0]);
   });
@@ -56,7 +64,7 @@ describe('"at" interface works correctly', () => {
     gameboard.at('a1')?.remove();
 
     expect(gameboard.board[0]).toBe(null);
-    expect(gameboard.pieceMap.w.r).toEqual(undefined);
+    expect('r' in gameboard.pieceMap.w).toEqual(false);
   });
 
   test('promote promotes the piece, removes the square from the piece map of the old piece type and adds it to the piece map of the new piece type', () => {
@@ -64,7 +72,7 @@ describe('"at" interface works correctly', () => {
     gameboard.at('a1')?.promote('q');
 
     expect(gameboard.board[0]).toBe('bq');
-    expect(gameboard.pieceMap.b.p).toBe(undefined);
+    expect('p' in gameboard.pieceMap.b).toBe(false);
     expect(gameboard.pieceMap.b.q).toEqual([0]);
   });
 
@@ -74,7 +82,7 @@ describe('"at" interface works correctly', () => {
   });
 });
 
-test('from().to moves the piece on the board and on the piece map', () => {
+test.only('from().to moves the piece on the board and on the piece map', () => {
   const gameboard = new Gameboard();
 
   gameboard.at('a1')?.place('bp');
@@ -85,4 +93,88 @@ test('from().to moves the piece on the board and on the piece map', () => {
   expect(gameboard.at('a2')?.piece).toBe('bp');
 
   expect(gameboard.pieceMap.b.p).toEqual([convertSquareToIdx('a2')]);
+});
+
+test('from().to handles capturing pieces', () => {
+  const gameboard = new Gameboard();
+
+  gameboard.at('a1')?.place('bp');
+  gameboard.at('b2').place('wp');
+  gameboard.from('b2')?.to('a1');
+
+  expect(gameboard.at('a1')?.piece).toBe('wp');
+  expect(gameboard.at('b2')?.piece).toBe(null);
+
+  expect('p' in gameboard.pieceMap.b).toEqual(false);
+  expect(gameboard.pieceMap.w.p).toEqual([0]);
+});
+
+describe('castle works', () => {
+  test('kingside', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('e1').place('wk');
+    gameboard.at('h1').place('wr');
+
+    gameboard.at('e8').place('bk');
+    gameboard.at('h8').place('br');
+
+    gameboard.castle('w', 'k');
+    gameboard.castle('b', 'k');
+
+    expect(gameboard.pieceMap).toEqual({
+      w: {
+        k: [6],
+        r: [5]
+      },
+      b: {
+        k: [62],
+        r: [61]
+      }
+    });
+  });
+
+  test('queenside', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('e1').place('wk');
+    gameboard.at('a1').place('wr');
+
+    gameboard.at('e8').place('bk');
+    gameboard.at('a8').place('br');
+
+    gameboard.castle('w', 'q');
+    gameboard.castle('b', 'q');
+
+    expect(gameboard.pieceMap).toEqual({
+      w: {
+        k: [2],
+        r: [3]
+      },
+      b: {
+        k: [58],
+        r: [59]
+      }
+    });
+  });
+
+  it('does nothing if the rook is not there', () => {
+    const gameboard = new Gameboard();
+
+    gameboard.at('e1').place('wk');
+
+    gameboard.at('e8').place('bk');
+
+    gameboard.castle('w', 'q');
+    gameboard.castle('b', 'k');
+
+    expect(gameboard.pieceMap).toEqual({
+      w: {
+        k: [convertSquareToIdx('e1')]
+      },
+      b: {
+        k: [convertSquareToIdx('e8')]
+      }
+    });
+  });
 });

@@ -9,7 +9,7 @@ import {
   getChecks,
   getLegalMoves
 } from '../src/utils/getMoves';
-import { convertIdxToSquare, convertSquareToIdx } from '../src/utils/square';
+import { convertSquareToIdx } from '../src/utils/square';
 
 // wrote this function because I changed the board implementation from a 2d array to a 1d array. Instead of manually converting each expected array I wrote this function instead
 function convertArrToIdx(arr: number[][]) {
@@ -99,6 +99,88 @@ describe('getPieceMoves works', () => {
       expect(
         getPieceMoves('n', gameboard.board, 35, undefined, true).sort()
       ).toEqual([18, 20, 25, 29, 45, 41, 50, 52].sort());
+    });
+
+    describe.only('doesnt include moves that wrap around the board', () => {
+      test('on the g file, 1st rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('g1')).sort()
+        ).toEqual(
+          ['h3', 'f3', 'e2'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the h file, 2st rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('h2')).sort()
+        ).toEqual(
+          ['f1', 'f3', 'g4'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the b file, 1st rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('b1')).sort()
+        ).toEqual(
+          ['a3', 'c3', 'd2'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the a file, 2st rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('a2')).sort()
+        ).toEqual(
+          ['c1', 'c3', 'b4'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the b file, 8th rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('b8')).sort()
+        ).toEqual(
+          ['a6', 'd7', 'c6'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the a file, 7th rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('a7')).sort()
+        ).toEqual(
+          ['c8', 'c6', 'b5'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the g file, 8th rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('g8')).sort()
+        ).toEqual(
+          ['h6', 'e7', 'f6'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
+
+      test('on the h file, 7th rank', () => {
+        const gameboard = new Gameboard();
+
+        expect(
+          getPieceMoves('n', gameboard.board, convertSquareToIdx('h7')).sort()
+        ).toEqual(
+          ['f8', 'f6', 'g5'].map((s) => convertSquareToIdx(s as Square)).sort()
+        );
+      });
     });
   });
 
@@ -797,7 +879,7 @@ describe('get checks work', () => {
   });
 });
 
-describe.only('getLegalMoves works', () => {
+describe('getLegalMoves works', () => {
   test('pieces have no moves if there are two checks', () => {
     const gameboard = new Gameboard();
 
