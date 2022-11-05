@@ -9,13 +9,14 @@ import {
   AllPieceMap,
   Square
 } from '../types/types';
-import { BOARD_SIZE } from '../utils/constants';
+import { BOARD_IDX, BOARD_LENGTH, BOARD_SIZE } from '../utils/constants';
 
 export default class Gameboard {
   board: Board;
   pieceMap: AllPieceMap;
   readonly length: number;
 
+  // board is a 10x12 1d array with padding to serve as sentinel values
   constructor(board?: Board) {
     const pieceMapInit = { w: { k: [] }, b: { k: [] } };
 
@@ -41,37 +42,44 @@ export default class Gameboard {
 
   create(): Board {
     return Array(BOARD_SIZE)
-      .fill(null)
-      .map(() => null) as Board;
+      .fill(0)
+      .map((s, i) => {
+        if (BOARD_IDX.includes(i as SquareIdx)) return null;
+        return 0;
+      }) as Board;
   }
 
-  init = (board = this.board) => {
-    const length = Math.sqrt(board.length);
+  init(board = this.board) {
     const initPositions = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'] as const;
 
+    for (let i = 0; i < BOARD_IDX.length; i++) {
+      // board_idx is a collection of indexes that represent all indexes not occupied by sentinel values
+      board[BOARD_IDX[i]] = null;
+    }
+
     for (let i = 0; i < initPositions.length; i++) {
-      board[i] = `w${initPositions[i]}`;
-      this.pushToPieceMap(initPositions[i], 'w', i as SquareIdx);
-      board[i + length] = `wp`;
-      this.pushToPieceMap('p', 'w', (i + length) as SquareIdx);
+      board[BOARD_IDX[i]] = `w${initPositions[i]}`;
+      this.pushToPieceMap(initPositions[i], 'w', BOARD_IDX[i]);
+      board[BOARD_IDX[i + BOARD_LENGTH]] = `wp`;
+      this.pushToPieceMap('p', 'w', BOARD_IDX[i + BOARD_LENGTH]);
 
       board[
         // need to reverse the order for black side
-        board.length - 1 - i
+        BOARD_IDX[BOARD_IDX.length - 1 - i]
       ] = `b${initPositions[initPositions.length - 1 - i]}`;
       this.pushToPieceMap(
         initPositions[initPositions.length - 1 - i],
         'b',
-        (board.length - 1 - i) as SquareIdx
+        BOARD_IDX[BOARD_IDX.length - 1 - i]
       );
-      board[board.length - 1 - i - length] = 'bp';
+      board[BOARD_IDX[BOARD_IDX.length - 1 - i - BOARD_LENGTH]] = 'bp';
       this.pushToPieceMap(
         'p',
         'b',
-        (board.length - 1 - i - length) as SquareIdx
+        BOARD_IDX[BOARD_IDX.length - 1 - i - BOARD_LENGTH]
       );
     }
-  };
+  }
 
   pushToPieceMap = (
     pieceType: PieceType,
@@ -115,8 +123,10 @@ export default class Gameboard {
 
   at(s: SquareIdx | Square, board = this.board) {
     const idx: SquareIdx = typeof s === 'string' ? convertSquareToIdx(s) : s;
-
     return {
+      get piece() {
+        return board[idx];
+      },
       place: (piece: Piece) => {
         board[idx] = piece;
         this.pushToPieceMap(piece[1] as PieceType, piece[0] as Colors, idx);

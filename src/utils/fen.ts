@@ -11,7 +11,8 @@ import {
 } from '../types/types';
 import { convertIdxToSquare } from './square';
 import { isFenStr } from './typeCheck';
-import { BOARD_LENGTH } from './constants';
+import { BOARD_IDX, BOARD_LENGTH } from './constants';
+import Gameboard from '../classes/Gameboard';
 
 export function convertFromFen(
   fen: FenStr,
@@ -54,7 +55,7 @@ export function convertFromFen(
   const splitIntoRanks = boardStr.split('/');
   splitIntoRanks.reverse();
 
-  const board = splitIntoRanks
+  const eightByEight = splitIntoRanks
     // need to split each str because each str represent a whole rank
     .map((str) => str.split(''))
     .flat()
@@ -80,10 +81,15 @@ export function convertFromFen(
       return acc;
     }, []);
 
+  const tenBytwelve = new Gameboard().create();
+  eightByEight.forEach((s, i) => {
+    tenBytwelve[BOARD_IDX[i]] = s;
+  });
+
   return new Game({
     halfmoves,
     fullmoves,
-    board: board as Board,
+    board: tenBytwelve as Board,
     castleRightsStr: castleRightsStr as CastleRightsStr,
     enPassant: enPassant as EnPassant,
     activeColor: activeColor as Colors
@@ -98,7 +104,7 @@ export function convertToFen(game: Game) {
   for (let rank = BOARD_LENGTH - 1; rank >= 0; rank--) {
     let rankStr = '';
     for (let file = 0; file < BOARD_LENGTH; file++) {
-      const idx = rank * BOARD_LENGTH + file;
+      const idx = BOARD_IDX[rank * BOARD_LENGTH + file];
       if (
         // square is empty
         !game.board[idx]

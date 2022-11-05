@@ -26,7 +26,7 @@ type _TupleOf<T, N extends number, R extends T[]> = R['length'] extends N
 
 export type Line = 'xy' | 'diagonal';
 
-export type Board = Tuple<Piece | null, typeof BOARD_SIZE>;
+export type Board = Tuple<Piece | null | 0, typeof BOARD_SIZE>;
 export type Square = `${typeof FILES[number]}${EnumerateFromOne<
   typeof BOARD_LENGTH
 >}`;
@@ -65,7 +65,7 @@ export type PieceMap = Partial<Record<Exclude<PieceType, 'k'>, SquareIdx[]>> &
 
 export type AllPieceMap = Record<Colors, PieceMap>;
 
-export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'>;
+export type CastleRightsStr = Permutations<'K' | 'Q' | 'k' | 'q'> | '';
 
 export type EnPassant = Square | '-';
 

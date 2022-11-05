@@ -13,7 +13,13 @@ import {
 import { convertSquareToIdx } from '../utils/square';
 import { isFenStr, isSquare } from '../utils/typeCheck';
 import Gameboard from './Gameboard';
-import { BOARD_LENGTH, COLORS, OPP_COLOR, VECTORS } from '../utils/constants';
+import {
+  BOARD_IDX,
+  BOARD_LENGTH,
+  COLORS,
+  OPP_COLOR,
+  VECTORS
+} from '../utils/constants';
 import { convertToFen } from '../utils/fen';
 import {
   getChecks,
@@ -65,6 +71,8 @@ export default class Game extends Gameboard {
     this.fullmoves = Number(fullmoves);
     this.activeColor = activeColor;
     this._checks = null;
+
+    if (!board) super.init();
   }
 
   get checks() {
@@ -89,6 +97,7 @@ export default class Game extends Gameboard {
         if (piece[1] === 'k') {
           return getLegalKingMoves(
             this.pieceMap[piece[0] as Colors].k[0],
+            piece[0] as Colors,
             this.pieceMap[oppColor],
             this.castleRights[piece[0] as Colors],
             board
@@ -122,8 +131,9 @@ export default class Game extends Gameboard {
     const valid = this.at(fromIdx).moves()?.includes(toIdx);
     if (!valid) return;
 
-    // measures halfmoves since last capture or pawn advance
-    if (!this.board[toIdx] || piece[1] !== 'p') this.halfmoves++;
+    // halfmoves measures moves since last capture or pawn advance
+    if (!this.board[toIdx] && piece[1] !== 'p') this.halfmoves++;
+    else this.halfmoves = 0;
 
     switch (piece[1]) {
       case 'k': {
@@ -171,7 +181,7 @@ export default class Game extends Gameboard {
         } else this.enPassant = null;
 
         this.from(fromIdx).to(toIdx);
-        const newRank = Math.floor(toIdx / BOARD_LENGTH);
+        const newRank = Math.floor(BOARD_IDX.indexOf(toIdx) / BOARD_LENGTH);
         const promoteRank = this.activeColor === 'w' ? 7 : 0;
         if (!promote) break;
         else if (newRank === promoteRank) this.at(toIdx).promote(promote);
@@ -194,7 +204,7 @@ export default class Game extends Gameboard {
     const gameOver = {
       checkmate: false,
       unforcedDraw: false,
-      forcedDraw: true
+      forcedDraw: false
     };
 
     // check for checkmate + stalemate
@@ -206,7 +216,7 @@ export default class Game extends Gameboard {
       this.castleRights[this.activeColor],
       this.checks
     );
-    const noLegalMoves = !!Object.keys(legalMoves)[0];
+    const noLegalMoves = !Object.keys(legalMoves)[0];
     if (noLegalMoves && this.checks.length) {
       gameOver.checkmate = true;
       return gameOver;

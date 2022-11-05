@@ -23,6 +23,7 @@ module.exports = {
     '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
     'no-use-before-define': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
-    'no-labels': 'off'
+    'no-labels': 'off',
+    'node/no-callback-literal': 'off'
   }
 };

@@ -1,4 +1,5 @@
 import Game from '../src/classes/Game';
+import Gameboard from '../src/classes/Gameboard';
 import { Square } from '../src/types/types';
 import { convertSquareToIdx } from '../src/utils/square';
 
@@ -6,7 +7,6 @@ describe('at().moves works correctly', () => {
   const game = new Game();
 
   test('in the inital position', () => {
-    game.init();
     expect(game.at('e1').moves()).toEqual([]);
 
     expect(game.at('b1').moves()?.sort()).toEqual(
@@ -22,9 +22,8 @@ describe('at().moves works correctly', () => {
   });
 });
 
-describe.only('makeMoves works', () => {
+describe('makeMoves works', () => {
   const game = new Game();
-  game.init();
   it('moves the piece and changes turns', () => {
     game.makeMove('g1', 'f3');
 
@@ -97,5 +96,101 @@ describe.only('makeMoves works', () => {
     game.makeMove('c7', 'c8', 'q');
 
     expect(game.pieceMap.w.q).toContain(convertSquareToIdx('c8'));
+  });
+
+  describe('halfmoves increments correctly', () => {
+    const game = new Game();
+    it('increments on piece move if theres no capture', () => {
+      expect(game.halfmoves).toBe(0);
+      game.makeMove('g1', 'f3');
+      expect(game.halfmoves).toBe(1);
+    });
+
+    it('resets when a pawn move is made', () => {
+      expect(game.halfmoves).toBe(1);
+      game.makeMove('e7', 'e5');
+      expect(game.halfmoves).toBe(0);
+    });
+
+    it('resets when a capture is made', () => {
+      expect(game.halfmoves).toBe(0);
+      game.makeMove('b1', 'c3');
+      game.makeMove('g8', 'f6');
+      expect(game.halfmoves).toBe(2);
+      game.makeMove('f3', 'e5');
+      expect(game.halfmoves).toBe(0);
+    });
+  });
+
+  test('fullmoves increments only after blacks turn', () => {
+    const game = new Game();
+    game.makeMove('e2', 'e4');
+    expect(game.fullmoves).toBe(0);
+    game.makeMove('e7', 'e5');
+    expect(game.fullmoves).toBe(1);
+  });
+});
+
+describe('isGameOver works', () => {
+  describe('checkmate/stalemate works', () => {
+    test('checkmate works', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('h1')?.place('wk');
+      gameboard.at('g1')?.place('wr');
+      gameboard.at('h2')?.place('wp');
+      gameboard.at('g2')?.place('wp');
+      gameboard.at('f2')?.place('bn');
+
+      const game = new Game({ board: gameboard.board, castleRightsStr: '' });
+      expect(game.isGameOver([])).toEqual({
+        checkmate: true,
+        unforcedDraw: false,
+        forcedDraw: false
+      });
+    });
+
+    test('stalemate works', () => {
+      const gameboard = new Gameboard();
+
+      gameboard.at('h1')?.place('wk');
+      gameboard.at('f1')?.place('bk');
+      gameboard.at('a2')?.place('bq');
+
+      const game = new Game({ board: gameboard.board });
+      expect(game.isGameOver([])).toEqual({
+        checkmate: false,
+        unforcedDraw: false,
+        forcedDraw: true
+      });
+    });
+  });
+
+  describe('halfmoves checks work', () => {
+    test('forced draw at 75 halfmoves', () => {
+      const game = new Game();
+      game.halfmoves = 75;
+
+      expect(game.isGameOver([])).toEqual({
+        checkmate: false,
+        unforcedDraw: false,
+        forcedDraw: true
+      });
+    });
+
+    test('unforced draw at 50 halfmoves', () => {
+      const game = new Game();
+      game.halfmoves = 50;
+
+      expect(
+        game.isGameOver([
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        ])
+      ).toEqual({
+        checkmate: false,
+        unforcedDraw: true,
+        forcedDraw: false
+      });
+    });
   });
 });
