@@ -268,8 +268,8 @@ export default class Game extends Gameboard {
       .join('');
 
     const insufficientMaterial = {
-      k: ['bk', 'kn'],
-      kb: ['bk']
+      k: ['bk', 'kn', 'k'],
+      bk: ['bk']
     };
 
     type PiecesLeft = keyof typeof insufficientMaterial;

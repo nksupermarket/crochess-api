@@ -34,16 +34,18 @@ describe('convertToFen works', () => {
   });
 
   it('works for starting position', () => {
-    expect(convertToFen(game)).toContain(
-      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+    expect(convertToFen(game)).toBe(
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0'
     );
   });
 
-  it('works when a pice moves', () => {
-    game.from(convertSquareToIdx('e2'))?.to(convertSquareToIdx('e4'));
+  it('works when a piece moves', () => {
+    game.from(convertSquareToIdx('e2')).to(convertSquareToIdx('e4'));
+    game.enPassant = convertSquareToIdx('e3');
+    game.activeColor = 'b';
 
-    expect(convertToFen(game)).toContain(
-      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR'
+    expect(convertToFen(game)).toBe(
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 0'
     );
   });
 });

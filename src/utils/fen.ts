@@ -122,7 +122,8 @@ export function convertToFen(game: Game) {
         rankStr += piece[0] === 'w' ? piece[1].toUpperCase() : piece[1];
       }
     }
-    fen += `${rankStr}/`;
+    fen += `${rankStr}`;
+    if (rank !== 0) fen += '/';
   }
 
   fen += ` ${game.activeColor}`;

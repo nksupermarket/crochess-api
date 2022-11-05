@@ -80,11 +80,14 @@ test('pieceMap initiates correctly', () => {
 
 describe('"at" interface works correctly', () => {
   const gameboard = new Gameboard();
-  test('place places a piece and pushes it to the piece map', () => {
-    gameboard.at('a1')?.place('wr');
-    const idx = convertSquareToIdx('a1');
-    expect(gameboard.board[idx]).toBe('wr');
-    expect(gameboard.pieceMap.w.r).toEqual([idx]);
+
+  describe('place works', () => {
+    test('place places a piece and pushes it to the piece map', () => {
+      gameboard.at('a1')?.place('wr');
+      const idx = convertSquareToIdx('a1');
+      expect(gameboard.board[idx]).toBe('wr');
+      expect(gameboard.pieceMap.w.r).toEqual([idx]);
+    });
   });
 
   test('remove removes the piece from the board and piece map, if there are no more of that piece type the property is deleted', () => {

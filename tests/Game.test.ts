@@ -193,4 +193,108 @@ describe('isGameOver works', () => {
       });
     });
   });
+
+  describe('repetition works', () => {
+    const game = new Game();
+    test('threefold repetition returns an unforced draw', () => {
+      expect(
+        game.isGameOver([
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        ])
+      ).toEqual({
+        checkmate: false,
+        unforcedDraw: true,
+        forcedDraw: false
+      });
+    });
+    test('fivefold repetition returns a forced draw', () => {
+      expect(
+        game.isGameOver([
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        ])
+      ).toEqual({
+        checkmate: false,
+        unforcedDraw: true,
+        forcedDraw: true
+      });
+    });
+  });
+
+  describe('draw by insufficient material works', () => {
+    test('king vs king returns a draw', () => {
+      const gameboard = new Gameboard();
+      gameboard.at('e1').place('wk');
+      gameboard.at('e2').place('bk');
+
+      const game = new Game({ board: gameboard.board });
+
+      expect(game.isGameOver([])).toEqual({
+        checkmate: false,
+        forcedDraw: true,
+        unforcedDraw: false
+      });
+    });
+
+    test('king vs king + bishop returns a draw', () => {
+      const gameboard = new Gameboard();
+      gameboard.at('e1').place('wk');
+      gameboard.at('e2').place('bk');
+      gameboard.at('e4').place('bb');
+
+      const game = new Game({ board: gameboard.board });
+
+      expect(game.isGameOver([])).toEqual({
+        checkmate: false,
+        forcedDraw: true,
+        unforcedDraw: false
+      });
+
+      const gameboard2 = new Gameboard();
+      gameboard.at('e1').place('bk');
+      gameboard.at('e2').place('wk');
+      gameboard.at('e4').place('wb');
+
+      const game2 = new Game({ board: gameboard2.board });
+
+      expect(game2.isGameOver([])).toEqual({
+        checkmate: false,
+        forcedDraw: true,
+        unforcedDraw: false
+      });
+    });
+
+    test('king vs king + knight returns a draw', () => {
+      const gameboard = new Gameboard();
+      gameboard.at('e1').place('wk');
+      gameboard.at('e2').place('bk');
+      gameboard.at('e4').place('bn');
+
+      const game = new Game({ board: gameboard.board });
+
+      expect(game.isGameOver([])).toEqual({
+        checkmate: false,
+        forcedDraw: true,
+        unforcedDraw: false
+      });
+
+      const gameboard2 = new Gameboard();
+      gameboard.at('e1').place('bk');
+      gameboard.at('e2').place('wk');
+      gameboard.at('e4').place('wn');
+
+      const game2 = new Game({ board: gameboard2.board });
+
+      expect(game2.isGameOver([])).toEqual({
+        checkmate: false,
+        forcedDraw: true,
+        unforcedDraw: false
+      });
+    });
+  });
 });
