@@ -12,8 +12,7 @@
     "strictNullChecks": true,
     "sourceMap": true,
     "esModuleInterop": true,
-    "declaration": true,
-    "lib": ["dom.iterable"]
+    "declaration": true
   },
   "include": ["./src/**/*"],
   "exclude": ["test/**/*"],

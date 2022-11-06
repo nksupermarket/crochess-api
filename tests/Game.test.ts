@@ -1,11 +1,12 @@
+import { MoveDetailsInterface } from '../src/types/interfaces';
 import Game from '../src/classes/Game';
 import Gameboard from '../src/classes/Gameboard';
 import { Square } from '../src/types/types';
+import { convertBoardToFen } from '../src/utils/fen';
 import { convertSquareToIdx } from '../src/utils/square';
 
 describe('at().moves works correctly', () => {
   const game = new Game();
-
   test('in the inital position', () => {
     expect(game.at('e1').moves()).toEqual([]);
 
@@ -125,9 +126,9 @@ describe('makeMoves works', () => {
   test('fullmoves increments only after blacks turn', () => {
     const game = new Game();
     game.makeMove('e2', 'e4');
-    expect(game.fullmoves).toBe(0);
-    game.makeMove('e7', 'e5');
     expect(game.fullmoves).toBe(1);
+    game.makeMove('e7', 'e5');
+    expect(game.fullmoves).toBe(2);
   });
 });
 
@@ -142,7 +143,9 @@ describe('isGameOver works', () => {
       gameboard.at('g2')?.place('wp');
       gameboard.at('f2')?.place('bn');
 
-      const game = new Game({ board: gameboard.board, castleRightsStr: '' });
+      const game = new Game(
+        `${convertBoardToFen(gameboard.board)} w KQkq - 0 1`
+      );
       expect(game.isGameOver([])).toEqual({
         checkmate: true,
         unforcedDraw: false,
@@ -157,7 +160,9 @@ describe('isGameOver works', () => {
       gameboard.at('f1')?.place('bk');
       gameboard.at('a2')?.place('bq');
 
-      const game = new Game({ board: gameboard.board });
+      const game = new Game(
+        `${convertBoardToFen(gameboard.board)} w KQkq - 0 1`
+      );
       expect(game.isGameOver([])).toEqual({
         checkmate: false,
         unforcedDraw: false,
@@ -232,7 +237,9 @@ describe('isGameOver works', () => {
       gameboard.at('e1').place('wk');
       gameboard.at('e2').place('bk');
 
-      const game = new Game({ board: gameboard.board });
+      const game = new Game(
+        `${convertBoardToFen(gameboard.board)} w KQkq - 0 1`
+      );
 
       expect(game.isGameOver([])).toEqual({
         checkmate: false,
@@ -247,7 +254,9 @@ describe('isGameOver works', () => {
       gameboard.at('e2').place('bk');
       gameboard.at('e4').place('bb');
 
-      const game = new Game({ board: gameboard.board });
+      const game = new Game(
+        `${convertBoardToFen(gameboard.board)} w KQkq - 0 1`
+      );
 
       expect(game.isGameOver([])).toEqual({
         checkmate: false,
@@ -260,7 +269,9 @@ describe('isGameOver works', () => {
       gameboard.at('e2').place('wk');
       gameboard.at('e4').place('wb');
 
-      const game2 = new Game({ board: gameboard2.board });
+      const game2 = new Game(
+        `${convertBoardToFen(gameboard2.board)} w KQkq - 0 1`
+      );
 
       expect(game2.isGameOver([])).toEqual({
         checkmate: false,
@@ -275,7 +286,9 @@ describe('isGameOver works', () => {
       gameboard.at('e2').place('bk');
       gameboard.at('e4').place('bn');
 
-      const game = new Game({ board: gameboard.board });
+      const game = new Game(
+        `${convertBoardToFen(gameboard.board)} w KQkq - 0 1`
+      );
 
       expect(game.isGameOver([])).toEqual({
         checkmate: false,
@@ -288,13 +301,151 @@ describe('isGameOver works', () => {
       gameboard.at('e2').place('wk');
       gameboard.at('e4').place('wn');
 
-      const game2 = new Game({ board: gameboard2.board });
+      const game2 = new Game(
+        `${convertBoardToFen(gameboard2.board)} w KQkq - 0 1`
+      );
 
       expect(game2.isGameOver([])).toEqual({
         checkmate: false,
         forcedDraw: true,
         unforcedDraw: false
       });
+    });
+  });
+});
+
+describe('moveNotation works', () => {
+  const game = new Game();
+  // unless a new game is created you have to run these tests together otherwise they wont work. they all use the game state
+
+  test('basic move', () => {
+    const details = game.makeMove('e2', 'e4');
+    const notation = game.createMoveNotation(details);
+    expect(notation).toBe('e4');
+  });
+
+  test('pawn capture', () => {
+    game.makeMove('d7', 'd5');
+    const details = game.makeMove('e4', 'd5');
+    const notation = game.createMoveNotation(details);
+
+    expect(notation).toBe('exd5');
+  });
+
+  test('enPassant capture', () => {
+    game.makeMove('e7', 'e5');
+
+    const details = game.makeMove('d5', 'e6');
+    const notation = game.createMoveNotation(details);
+
+    expect(notation).toBe('dxe6');
+  });
+
+  describe('multiple pieces can go to the same square', () => {
+    test('different file', () => {
+      game.makeMove('a7', 'a6');
+      game.makeMove('b1', 'c3');
+      game.makeMove('a6', 'a5');
+      const details = game.makeMove('c3', 'e2');
+      const notation = game.createMoveNotation(details);
+
+      expect(notation).toBe('Nce2');
+    });
+    test('different rank', () => {
+      game.at('e4').place('wn');
+      game.makeMove('e4', 'c3');
+      const notation = game.createMoveNotation({
+        from: 'e4',
+        to: 'c3',
+        piece: 'wn'
+      });
+
+      expect(notation).toBe('N4c3');
+    });
+    test('different file + rank', () => {
+      game.at('b5').place('wn');
+      const notation = game.createMoveNotation({
+        from: 'e4',
+        to: 'c3',
+        piece: 'wn'
+      });
+
+      expect(notation).toBe('Ne4c3');
+    });
+  });
+
+  describe('checks/checkmates work', () => {
+    test('checks', () => {
+      const gameboard = new Gameboard();
+      gameboard.at('e1').place('wk');
+      gameboard.at('b4').place('bb');
+
+      const fenBoard = convertBoardToFen(gameboard.board);
+      const game = new Game(`${fenBoard} w KQkq - 0 2`);
+
+      expect(
+        game.createMoveNotation({
+          from: 'f8',
+          to: 'c4',
+          piece: 'bb'
+        })
+      ).toBe('Bc4+');
+    });
+
+    test('checkmate', () => {
+      const gameboard = new Gameboard();
+      gameboard.at('h1')?.place('wk');
+      gameboard.at('g1')?.place('wr');
+      gameboard.at('h2')?.place('wp');
+      gameboard.at('g2')?.place('wp');
+      gameboard.at('f2')?.place('bn');
+
+      const fenBoard = convertBoardToFen(gameboard.board);
+      const game = new Game(`${fenBoard} w KQkq - 0 2`);
+
+      expect(
+        game.createMoveNotation({
+          from: 'h3',
+          to: 'f2',
+          piece: 'bn'
+        })
+      ).toBe('Nf2#');
+    });
+  });
+
+  test('promotion works', () => {
+    const game = new Game();
+    expect(
+      game.createMoveNotation({
+        from: 'a7',
+        to: 'a8',
+        piece: 'wp',
+        promote: 'q'
+      })
+    ).toBe('a8=Q');
+  });
+
+  describe('castling works', () => {
+    const game = new Game();
+    test('kingside', () => {
+      expect(
+        game.createMoveNotation({
+          from: 'e1',
+          to: 'g1',
+          piece: 'wk',
+          castle: 'k'
+        })
+      ).toBe('0-0');
+    });
+    test('kingside', () => {
+      expect(
+        game.createMoveNotation({
+          from: 'e1',
+          to: 'c1',
+          piece: 'wk',
+          castle: 'q'
+        })
+      ).toBe('0-0-0');
     });
   });
 });

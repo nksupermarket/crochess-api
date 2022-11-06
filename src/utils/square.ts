@@ -1,4 +1,4 @@
-import { Square, EnumerateFromOne, Files, SquareIdx } from 'src/types/types';
+import { Square, EnumerateFromOne, Files, SquareIdx } from '../types/types';
 import { BOARD_IDX, BOARD_LENGTH, FILES } from './constants';
 
 export function convertSquareToIdx(square: Square): SquareIdx {

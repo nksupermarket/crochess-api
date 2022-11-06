@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   mode: 'development',
-  entry: './src/main.ts',
+  entry: { main: './src/main.ts', fen: './src/utils/fen.ts' },
   devtool: 'eval-source-map',
   devServer: {
     static: './dist'
@@ -20,7 +20,7 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js']
   },
   output: {
-    filename: 'main.js',
+    filename: '[name].js',
     library: 'croChess',
     libraryTarget: 'umd',
     globalObject: 'this',

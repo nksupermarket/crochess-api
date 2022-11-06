@@ -18,6 +18,7 @@ export const BOARD_IDX: SquareIdx[] = [
   67, 68, 71, 72, 73, 74, 75, 76, 77, 78, 81, 82, 83, 84, 85, 86, 87, 88, 91,
   92, 93, 94, 95, 96, 97, 98
 ];
+// board_idx is a collection of indexes that represent all indexes not occupied by sentinel values
 
 export const KNIGHT_JUMPS = [-21, -19, 19, 21, 12, 8, -8, -12] as const;
 

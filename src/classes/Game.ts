@@ -1,32 +1,39 @@
 import {
-  Board,
   CastleRights,
-  CastleRightsStr,
   Colors,
-  EnPassant,
   EnumerateFromOne,
   FenStr,
   PieceType,
   Square,
-  SquareIdx
+  SquareIdx,
+  PieceUppercase,
+  MoveSuffix,
+  Ranks,
+  Files,
+  MoveNotation,
+  PieceMap,
+  Board
 } from '../types/types';
-import { convertSquareToIdx } from '../utils/square';
+import { convertSquareToIdx, convertIdxToSquare } from '../utils/square';
 import { isFenStr, isSquare } from '../utils/typeCheck';
 import Gameboard from './Gameboard';
 import {
   BOARD_IDX,
   BOARD_LENGTH,
-  COLORS,
   OPP_COLOR,
   VECTORS
 } from '../utils/constants';
-import { convertToFen } from '../utils/fen';
+import { convertFromFen, convertToFen } from '../utils/fen';
 import {
   getChecks,
   getMovesForColor,
   getLegalKingMoves,
   getLegalMoves
 } from '../utils/getMoves';
+import {
+  GameConstructorParams,
+  MoveDetailsInterface
+} from '../types/interfaces';
 
 export default class Game extends Gameboard {
   castleRights: Record<Colors, CastleRights>;
@@ -37,42 +44,29 @@ export default class Game extends Gameboard {
   // if checks is null, that means it hasnt been cached yet
   private _checks: SquareIdx[] | null;
 
-  constructor({
-    castleRightsStr = 'KQkq',
-    board,
-    enPassant = '-',
-    halfmoves = 0,
-    fullmoves = 0,
-    activeColor = 'w'
-  }: {
-    castleRightsStr?: CastleRightsStr;
-    enPassant?: EnPassant;
-    halfmoves?: string | number;
-    fullmoves?: string | number;
-    activeColor?: Colors;
-    board?: Board;
-  } = {}) {
-    super(board);
-    this.castleRights = COLORS.reduce<Record<Colors, CastleRights>>(
-      (acc, curr) => {
-        const kingsideStr = curr === 'w' ? 'K' : 'k';
-        const queensideStr = curr === 'w' ? 'Q' : 'q';
+  constructor(
+    fen: FenStr = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+  ) {
+    if (!isFenStr(fen))
+      throw new Error('Game was not given a valid fen string');
 
-        acc[curr] = {
-          k: castleRightsStr.includes(kingsideStr),
-          q: castleRightsStr.includes(queensideStr)
-        };
-        return acc;
-      },
-      {} as Record<Colors, CastleRights>
-    );
+    super();
+    const {
+      board,
+      castleRights,
+      enPassant,
+      halfmoves,
+      fullmoves,
+      activeColor
+    } = convertFromFen(fen, this.pushToPieceMap) as GameConstructorParams;
+
+    this.board = board;
+    this.castleRights = castleRights;
     this.enPassant = isSquare(enPassant) ? convertSquareToIdx(enPassant) : null;
     this.halfmoves = Number(halfmoves);
     this.fullmoves = Number(fullmoves);
     this.activeColor = activeColor;
     this._checks = null;
-
-    if (!board) super.init();
   }
 
   get checks() {
@@ -121,7 +115,7 @@ export default class Game extends Gameboard {
     from: Square,
     to: Square,
     promote?: Exclude<PieceType, 'k' | 'p'>
-  ) => {
+  ): MoveDetailsInterface | undefined => {
     const fromIdx = convertSquareToIdx(from);
     const toIdx = convertSquareToIdx(to);
 
@@ -131,6 +125,13 @@ export default class Game extends Gameboard {
     const valid = this.at(fromIdx).moves()?.includes(toIdx);
     if (!valid) return;
 
+    //
+    const moveDetails = {
+      from,
+      to,
+      piece: piece,
+      capture: !!this.board[toIdx]
+    } as MoveDetailsInterface;
     // halfmoves measures moves since last capture or pawn advance
     if (!this.board[toIdx] && piece[1] !== 'p') this.halfmoves++;
     else this.halfmoves = 0;
@@ -147,10 +148,12 @@ export default class Game extends Gameboard {
         const distance = toIdx - fromIdx;
         if (distance === -2) {
           this.castle(this.activeColor, 'q');
+          moveDetails.castle = 'q';
         }
 
         if (distance === 2) {
           this.castle(this.activeColor, 'k');
+          moveDetails.castle = 'k';
         }
 
         if (distance !== 2 && distance !== -2) this.from(fromIdx).to(toIdx);
@@ -174,6 +177,7 @@ export default class Game extends Gameboard {
         if (toIdx === this.enPassant) {
           const captureIdx = (toIdx - VECTORS[forward]) as SquareIdx;
           this.at(captureIdx).remove();
+          moveDetails.capture = true;
         }
         // check if you need to toggle enPassant
         if (toIdx === 2 * VECTORS[forward] + fromIdx) {
@@ -184,7 +188,10 @@ export default class Game extends Gameboard {
         const newRank = Math.floor(BOARD_IDX.indexOf(toIdx) / BOARD_LENGTH);
         const promoteRank = this.activeColor === 'w' ? 7 : 0;
         if (!promote) break;
-        else if (newRank === promoteRank) this.at(toIdx).promote(promote);
+        else if (newRank === promoteRank) {
+          this.at(toIdx).promote(promote);
+          moveDetails.promote = promote;
+        }
 
         break;
       }
@@ -198,7 +205,21 @@ export default class Game extends Gameboard {
     if (this.activeColor === 'b') this.fullmoves++;
     this.activeColor = OPP_COLOR[this.activeColor];
     this._checks = null;
+
+    return moveDetails;
   };
+
+  private isNoLegalMoves() {
+    const legalMoves = getMovesForColor(
+      this.board,
+      this.pieceMap,
+      this.activeColor,
+      this.enPassant,
+      this.castleRights[this.activeColor],
+      this.checks
+    );
+    return !Object.keys(legalMoves)[0];
+  }
 
   isGameOver = (fenList: FenStr[]) => {
     const gameOver = {
@@ -208,15 +229,7 @@ export default class Game extends Gameboard {
     };
 
     // check for checkmate + stalemate
-    const legalMoves = getMovesForColor(
-      this.board,
-      this.pieceMap,
-      this.activeColor,
-      this.enPassant,
-      this.castleRights[this.activeColor],
-      this.checks
-    );
-    const noLegalMoves = !Object.keys(legalMoves)[0];
+    const noLegalMoves = this.isNoLegalMoves();
     if (noLegalMoves && this.checks.length) {
       gameOver.checkmate = true;
       return gameOver;
@@ -290,4 +303,122 @@ export default class Game extends Gameboard {
 
     return gameOver;
   };
+
+  convertToFen() {
+    return convertToFen(this);
+  }
+
+  createMoveNotation(
+    details: MoveDetailsInterface | undefined
+  ): MoveNotation | undefined {
+    if (!details) return;
+
+    let notation: MoveNotation;
+    if (details.castle) {
+      notation = details.castle === 'k' ? '0-0' : '0-0-0';
+    } else {
+      switch (details.piece[1]) {
+        case 'p': {
+          if (details.capture)
+            notation = `${details.from[0] as Files}x${details.to}`;
+          else notation = details.to;
+
+          if (details.promote)
+            notation += `=${details.promote.toUpperCase() as PieceUppercase}`;
+          break;
+        }
+        case 'k': {
+          if (details.capture)
+            notation = `${details.piece[1].toUpperCase() as PieceUppercase}x${
+              details.to
+            }`;
+          else
+            notation = `${details.piece[1].toUpperCase() as PieceUppercase}${
+              details.to
+            }`;
+          break;
+        }
+        default: {
+          // have to copy bc you make the move first then get the notation
+          const toIdx = convertSquareToIdx(details.to);
+          const fromIdx = convertSquareToIdx(details.from);
+          const copy = this.board.slice(0) as Board;
+          if (copy[toIdx] === details.piece) {
+            copy[toIdx] = null;
+            copy[fromIdx] = details.piece;
+          }
+          const piecesThatHitSquare = getPiecesThatHitSquare(
+            details.piece[1] as Exclude<PieceType, 'k' | 'p'>,
+            details.piece[0] as Colors,
+            toIdx,
+            this.pieceMap[details.piece[0] as Colors],
+            this.checks,
+            copy,
+            fromIdx
+          );
+          if (!piecesThatHitSquare)
+            throw new Error('piece doesnt exist in piece map');
+          let differentiation: Files | Square | Ranks | '' = '';
+          switch (piecesThatHitSquare.length) {
+            case 2:
+              differentiation = details.from;
+              break;
+            case 1: {
+              const otherPiece = convertIdxToSquare(
+                piecesThatHitSquare[0]
+              ) as Square;
+              differentiation = (
+                otherPiece[0] === details.from[0]
+                  ? details.from[1]
+                  : details.from[0]
+              ) as Ranks | Files;
+            }
+          }
+
+          if (details.capture)
+            notation = `${
+              details.piece[1].toUpperCase() as PieceUppercase
+            }${differentiation}x${details.to}`;
+          else
+            notation = `${
+              details.piece[1].toUpperCase() as PieceUppercase
+            }${differentiation}${details.to}`;
+        }
+      }
+    }
+
+    let suffix: MoveSuffix | '' = '';
+    if (this.checks.length) {
+      suffix = this.isNoLegalMoves() ? '#' : '+';
+    }
+
+    return (notation += suffix);
+  }
+}
+
+function getPiecesThatHitSquare(
+  pieceType: Exclude<PieceType, 'k' | 'p'>,
+  color: Colors,
+  square: SquareIdx,
+  pieceMap: PieceMap,
+  check: SquareIdx[],
+  board: Board,
+  skip?: SquareIdx
+): SquareIdx[] | undefined {
+  const pieceSquares = pieceMap[pieceType];
+  if (!pieceSquares) return;
+  if (pieceSquares.length === 1) return [];
+
+  return pieceSquares.filter((s) => {
+    return s === skip
+      ? false
+      : getLegalMoves(
+          pieceType,
+          board,
+          color,
+          s,
+          pieceMap.k[0],
+          check
+        ).includes(square);
+  });
 }

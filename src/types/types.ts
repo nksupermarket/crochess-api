@@ -5,7 +5,7 @@ import {
   BOARD_SIZE,
   BOARD_LENGTH,
   VECTORS
-} from 'src/utils/constants';
+} from '../utils/constants';
 
 export type PieceType = typeof PIECE_TYPES[number];
 
@@ -14,6 +14,8 @@ export type Colors = typeof COLORS[number];
 export type Piece = `${Colors}${PieceType}`;
 
 export type Files = typeof FILES[number];
+
+export type Ranks = EnumerateFromOne<8>;
 
 export type Tuple<T, N extends number> = N extends N
   ? number extends N
@@ -82,3 +84,23 @@ export type Dir = keyof typeof VECTORS;
 export type Vector = typeof VECTORS[Dir];
 
 export type SquareMap = { [key in SquareIdx]?: true };
+
+export type MoveSuffix = '+' | '#';
+export type PieceUppercase = `${Uppercase<Exclude<PieceType, 'p'>>}`;
+type PieceNotation =
+  | `${PieceUppercase}${Files}`
+  | `${PieceUppercase}${Ranks}`
+  | `${PieceUppercase}${Square}`
+  | PieceUppercase;
+type CastleNotation = '0-0' | '0-0-0';
+type BaseMoveNotation =
+  | `${PieceNotation}${Square}`
+  | `${PieceNotation}x${Square}`
+  | Square
+  | `${Files}x${Square}`
+  | `${Square}=${PieceUppercase}`
+  | CastleNotation;
+
+export type MoveNotation = string;
+export type MoveNotationPair = Tuple<MoveNotation, 1 | 2>;
+export type MoveNotationList = MoveNotationPair[];

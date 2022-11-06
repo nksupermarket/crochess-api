@@ -10,7 +10,7 @@ describe('convertFromFen works', () => {
     gameboard.init();
     expect(
       convertFromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-        .board
+        ?.board
     ).toEqual(gameboard.board);
   });
 
@@ -20,22 +20,17 @@ describe('convertFromFen works', () => {
     expect(
       convertFromFen(
         'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
-      ).board
+      )?.board
     ).toEqual(gameboard.board);
   });
 });
 
 describe('convertToFen works', () => {
-  const gameboard = new Gameboard();
-  gameboard.init();
-
-  const game = new Game({
-    board: gameboard.board
-  });
+  const game = new Game();
 
   it('works for starting position', () => {
     expect(convertToFen(game)).toBe(
-      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0'
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
     );
   });
 
@@ -45,7 +40,7 @@ describe('convertToFen works', () => {
     game.activeColor = 'b';
 
     expect(convertToFen(game)).toBe(
-      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 0'
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
     );
   });
 });

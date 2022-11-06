@@ -1,9 +1,8 @@
 {
-  "name": "crochessapi",
-  "type": "module",
-  "version": "0.0.1",
+  "name": "crochess-api",
+  "version": "2.0.0",
   "main": "./dist/main.js",
-  "types": "./dist/main.d.ts",
+  "types": "./dist/types/types.d.ts",
   "files": [
     "dist"
   ],
