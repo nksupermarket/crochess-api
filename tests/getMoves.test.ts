@@ -1,5 +1,6 @@
 import Gameboard from '../src/classes/Gameboard';
 import { Square, SquareIdx } from '../src/types/types';
+import { createBoard } from '../src/utils/board';
 import { BOARD_IDX, VECTORS } from '../src/utils/constants';
 import {
   getPieceMoves,
@@ -7,20 +8,13 @@ import {
   exportedForTesting,
   getLegalKingMoves,
   getChecks,
-  getLegalMoves
+  getLegalPieceMoves
 } from '../src/utils/getMoves';
 import { convertSquareToIdx, convertIdxToSquare } from '../src/utils/square';
 
-function convertArrToIdx(arr: number[][]) {
-  return arr.map((v) => {
-    const [rank, file] = v;
-    return rank * 8 + file;
-  });
-}
-
 describe('getPieceMoves works', () => {
   const gameboard = new Gameboard();
-  beforeEach(() => (gameboard.board = gameboard.create()));
+  beforeEach(() => (gameboard.board = createBoard()));
 
   describe('bishop moves works', () => {
     it('works on an empty board', () => {
@@ -184,7 +178,7 @@ describe('getPieceMoves works', () => {
     });
 
     describe('doesnt include moves that wrap around the board', () => {
-      gameboard.board = gameboard.create();
+      gameboard.board = createBoard();
       test('on the g file, 1st rank', () => {
         expect(
           getPieceMoves(
@@ -501,7 +495,7 @@ describe('getPieceMoves works', () => {
 
 describe('getPawnMoves works', () => {
   const gameboard = new Gameboard();
-  beforeEach(() => (gameboard.board = gameboard.create()));
+  beforeEach(() => (gameboard.board = createBoard()));
 
   it('works on an empty board', () => {
     expect(
@@ -583,7 +577,7 @@ describe('getPawnMoves works', () => {
 describe('isPiecePinned', () => {
   const { isPiecePinned } = exportedForTesting;
   const gameboard = new Gameboard();
-  beforeEach(() => (gameboard.board = gameboard.create()));
+  beforeEach(() => (gameboard.board = createBoard()));
 
   test('works on y axis', () => {
     const pIdx = convertSquareToIdx('e2');
@@ -1096,7 +1090,7 @@ describe('get checks work', () => {
   });
 });
 
-describe('getLegalMoves works', () => {
+describe('getLegalPieceMoves works', () => {
   test('pieces have no moves if there are two checks', () => {
     const gameboard = new Gameboard();
 
@@ -1106,7 +1100,7 @@ describe('getLegalMoves works', () => {
     gameboard.at('h1')?.place('wr');
 
     expect(
-      getLegalMoves(
+      getLegalPieceMoves(
         'r',
         gameboard.board,
         'w',
@@ -1125,7 +1119,7 @@ describe('getLegalMoves works', () => {
     gameboard.at('h1')?.place('wr');
 
     expect(
-      getLegalMoves(
+      getLegalPieceMoves(
         'r',
         gameboard.board,
         'w',
@@ -1145,7 +1139,7 @@ describe('getLegalMoves works', () => {
 
     const h8Idx = convertSquareToIdx('h8');
     expect(
-      getLegalMoves(
+      getLegalPieceMoves(
         'r',
         gameboard.board,
         'w',
@@ -1164,7 +1158,7 @@ describe('getLegalMoves works', () => {
     gameboard.at('d1')?.place('wn');
 
     expect(
-      getLegalMoves(
+      getLegalPieceMoves(
         'n',
         gameboard.board,
         'w',
@@ -1184,7 +1178,7 @@ describe('getLegalMoves works', () => {
     gameboard.at('c5')?.place('bp');
 
     expect(
-      getLegalMoves(
+      getLegalPieceMoves(
         'p',
         gameboard.board,
         'w',
@@ -1204,7 +1198,7 @@ describe('getLegalMoves works', () => {
     gameboard.at('e3')?.place('wq');
 
     expect(
-      getLegalMoves(
+      getLegalPieceMoves(
         'q',
         gameboard.board,
         'w',

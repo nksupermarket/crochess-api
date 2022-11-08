@@ -1,42 +1,28 @@
 import {
-  CastleRights,
+  AllCastleRights,
   Colors,
   EnumerateFromOne,
   FenStr,
   PieceType,
   Square,
   SquareIdx,
-  PieceUppercase,
-  MoveSuffix,
-  Ranks,
-  Files,
-  MoveNotation,
-  PieceMap,
-  Board
+  PromotePieceType
 } from '../types/types';
-import { convertSquareToIdx, convertIdxToSquare } from '../utils/square';
+import { convertSquareToIdx } from '../utils/square';
 import { isFenStr, isSquare } from '../utils/typeCheck';
 import Gameboard from './Gameboard';
-import {
-  BOARD_IDX,
-  BOARD_LENGTH,
-  OPP_COLOR,
-  VECTORS
-} from '../utils/constants';
+import { OPP_COLOR, VECTORS } from '../utils/constants';
 import { convertFromFen, convertToFen } from '../utils/fen';
 import {
   getChecks,
   getMovesForColor,
   getLegalKingMoves,
-  getLegalMoves
+  getLegalPieceMoves
 } from '../utils/getMoves';
-import {
-  GameConstructorParams,
-  MoveDetailsInterface
-} from '../types/interfaces';
+import { GameState, MoveDetailsInterface } from '../types/interfaces';
 
 export default class Game extends Gameboard {
-  castleRights: Record<Colors, CastleRights>;
+  castleRights: AllCastleRights;
   enPassant: SquareIdx | null;
   halfmoves: number;
   fullmoves: number;
@@ -58,7 +44,7 @@ export default class Game extends Gameboard {
       halfmoves,
       fullmoves,
       activeColor
-    } = convertFromFen(fen, this.pushToPieceMap) as GameConstructorParams;
+    } = convertFromFen(fen, this.pushToPieceMap) as GameState;
 
     this.board = board;
     this.castleRights = castleRights;
@@ -97,7 +83,7 @@ export default class Game extends Gameboard {
             board
           );
         } else {
-          return getLegalMoves(
+          return getLegalPieceMoves(
             piece[1] as Exclude<PieceType, 'k'>,
             board,
             piece[0] as Colors,
@@ -114,7 +100,7 @@ export default class Game extends Gameboard {
   makeMove = (
     from: Square,
     to: Square,
-    promote?: Exclude<PieceType, 'k' | 'p'>
+    promote?: PromotePieceType
   ): MoveDetailsInterface | undefined => {
     const fromIdx = convertSquareToIdx(from);
     const toIdx = convertSquareToIdx(to);
@@ -185,10 +171,8 @@ export default class Game extends Gameboard {
         } else this.enPassant = null;
 
         this.from(fromIdx).to(toIdx);
-        const newRank = Math.floor(BOARD_IDX.indexOf(toIdx) / BOARD_LENGTH);
-        const promoteRank = this.activeColor === 'w' ? 7 : 0;
         if (!promote) break;
-        else if (newRank === promoteRank) {
+        else if (this.isPromoteSquare(this.activeColor, to)) {
           this.at(toIdx).promote(promote);
           moveDetails.promote = promote;
         }
@@ -304,121 +288,7 @@ export default class Game extends Gameboard {
     return gameOver;
   };
 
-  convertToFen() {
+  fen() {
     return convertToFen(this);
   }
-
-  createMoveNotation(
-    details: MoveDetailsInterface | undefined
-  ): MoveNotation | undefined {
-    if (!details) return;
-
-    let notation: MoveNotation;
-    if (details.castle) {
-      notation = details.castle === 'k' ? '0-0' : '0-0-0';
-    } else {
-      switch (details.piece[1]) {
-        case 'p': {
-          if (details.capture)
-            notation = `${details.from[0] as Files}x${details.to}`;
-          else notation = details.to;
-
-          if (details.promote)
-            notation += `=${details.promote.toUpperCase() as PieceUppercase}`;
-          break;
-        }
-        case 'k': {
-          if (details.capture)
-            notation = `${details.piece[1].toUpperCase() as PieceUppercase}x${
-              details.to
-            }`;
-          else
-            notation = `${details.piece[1].toUpperCase() as PieceUppercase}${
-              details.to
-            }`;
-          break;
-        }
-        default: {
-          // have to copy bc you make the move first then get the notation
-          const toIdx = convertSquareToIdx(details.to);
-          const fromIdx = convertSquareToIdx(details.from);
-          const copy = this.board.slice(0) as Board;
-          if (copy[toIdx] === details.piece) {
-            copy[toIdx] = null;
-            copy[fromIdx] = details.piece;
-          }
-          const piecesThatHitSquare = getPiecesThatHitSquare(
-            details.piece[1] as Exclude<PieceType, 'k' | 'p'>,
-            details.piece[0] as Colors,
-            toIdx,
-            this.pieceMap[details.piece[0] as Colors],
-            this.checks,
-            copy,
-            fromIdx
-          );
-          if (!piecesThatHitSquare)
-            throw new Error('piece doesnt exist in piece map');
-          let differentiation: Files | Square | Ranks | '' = '';
-          switch (piecesThatHitSquare.length) {
-            case 2:
-              differentiation = details.from;
-              break;
-            case 1: {
-              const otherPiece = convertIdxToSquare(
-                piecesThatHitSquare[0]
-              ) as Square;
-              differentiation = (
-                otherPiece[0] === details.from[0]
-                  ? details.from[1]
-                  : details.from[0]
-              ) as Ranks | Files;
-            }
-          }
-
-          if (details.capture)
-            notation = `${
-              details.piece[1].toUpperCase() as PieceUppercase
-            }${differentiation}x${details.to}`;
-          else
-            notation = `${
-              details.piece[1].toUpperCase() as PieceUppercase
-            }${differentiation}${details.to}`;
-        }
-      }
-    }
-
-    let suffix: MoveSuffix | '' = '';
-    if (this.checks.length) {
-      suffix = this.isNoLegalMoves() ? '#' : '+';
-    }
-
-    return (notation += suffix);
-  }
-}
-
-function getPiecesThatHitSquare(
-  pieceType: Exclude<PieceType, 'k' | 'p'>,
-  color: Colors,
-  square: SquareIdx,
-  pieceMap: PieceMap,
-  check: SquareIdx[],
-  board: Board,
-  skip?: SquareIdx
-): SquareIdx[] | undefined {
-  const pieceSquares = pieceMap[pieceType];
-  if (!pieceSquares) return;
-  if (pieceSquares.length === 1) return [];
-
-  return pieceSquares.filter((s) => {
-    return s === skip
-      ? false
-      : getLegalMoves(
-          pieceType,
-          board,
-          color,
-          s,
-          pieceMap.k[0],
-          check
-        ).includes(square);
-  });
 }

@@ -2,7 +2,10 @@ const path = require('path');
 
 module.exports = {
   mode: 'development',
-  entry: { main: './src/main.ts', fen: './src/utils/fen.ts' },
+  entry: {
+    index: './src/index.ts',
+    square: { import: './src/utils/square.ts', filename: 'utils/square.js' }
+  },
   devtool: 'eval-source-map',
   devServer: {
     static: './dist'

@@ -8,6 +8,7 @@ import {
 } from '../utils/constants';
 
 export type PieceType = typeof PIECE_TYPES[number];
+export type PromotePieceType = Exclude<PieceType, 'k' | 'p'>;
 
 export type Colors = typeof COLORS[number];
 
@@ -74,6 +75,7 @@ export type EnPassant = Square | '-';
 export type Side = 'k' | 'q';
 
 export type CastleRights = Record<Side, boolean>;
+export type AllCastleRights = Record<Colors, CastleRights>;
 
 export type NumberLiteral<N extends Exclude<number, N>> = N;
 
@@ -102,5 +104,4 @@ type BaseMoveNotation =
   | CastleNotation;
 
 export type MoveNotation = string;
-export type MoveNotationPair = Tuple<MoveNotation, 1 | 2>;
-export type MoveNotationList = MoveNotationPair[];
+export type MoveNotationList = MoveNotation[];

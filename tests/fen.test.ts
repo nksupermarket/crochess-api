@@ -2,12 +2,13 @@ import Gameboard from '../src/classes/Gameboard';
 import Game from '../src/classes/Game';
 import { convertFromFen, convertToFen } from '../src/utils/fen';
 import { convertSquareToIdx } from '../src/utils/square';
+import { init } from '../src/utils/board';
 
 describe('convertFromFen works', () => {
   const gameboard = new Gameboard();
+  gameboard.board = init(gameboard.board);
 
   it('works for starting position', () => {
-    gameboard.init();
     expect(
       convertFromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
         ?.board

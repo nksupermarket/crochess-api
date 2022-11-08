@@ -6,13 +6,13 @@ import {
   PieceType,
   EnPassant,
   Piece,
-  CastleRights
+  AllCastleRights
 } from '../types/types';
 import { convertIdxToSquare } from './square';
 import { isFenStr } from './typeCheck';
-import { BOARD_IDX, BOARD_LENGTH, COLORS } from './constants';
-import Gameboard from '../classes/Gameboard';
-import { GameConstructorParams } from 'src/types/interfaces';
+import { BOARD_IDX, COLORS, BOARD_LENGTH } from './constants';
+import { GameState } from '../types/interfaces';
+import { createBoard } from './board';
 
 export function convertFromFen(
   fen: string,
@@ -21,7 +21,7 @@ export function convertFromFen(
     color: Colors,
     squareIdx: SquareIdx
   ) => void
-): GameConstructorParams | undefined {
+): GameState | undefined {
   if (!isFenStr(fen)) return;
   const split = fen.split(' ');
   const [
@@ -34,56 +34,48 @@ export function convertFromFen(
   ] = split;
 
   // convert board
+  // need to split into ranks then reverse because otherwise each rank is reversed
   // need to reverse the array because fen string starts with the 8th rank first
-  const splitIntoRanks = boardStr.split('/');
-  splitIntoRanks.reverse();
 
-  const eightByEight = splitIntoRanks
-    // need to split each str because each str represent a whole rank
-    .map((str) => str.split(''))
-    .flat()
-    .reduce<(Piece | null)[]>((acc, curr) => {
-      // iterate over the string representation of the rank
+  const reversed = boardStr.split('/').reverse().join('');
+  let idx = 0;
+  const tenBytwelve = createBoard();
+  for (let j = 0; j < reversed.length; j++) {
+    const char = reversed[j];
+    if (char === '/') continue;
 
-      if (curr === '/') return acc;
-
-      if (Number(curr)) {
-        return acc.concat(Array(Number(curr)).fill(null));
+    if (Number(char)) {
+      for (let i = 0; i < Number(char); i++) {
+        tenBytwelve[BOARD_IDX[idx]] = null;
+        idx++;
       }
-
-      // curr represents a piece
-      const pieceType = curr as PieceType;
-      const piece =
-        pieceType.toLowerCase() === pieceType
-          ? (`b${pieceType}` as Piece)
-          : (`w${pieceType.toLowerCase()}` as Piece);
-
-      acc.push(piece);
-      return acc;
-    }, []);
-
-  const tenBytwelve = new Gameboard().create();
-  eightByEight.forEach((s, i) => {
-    tenBytwelve[BOARD_IDX[i]] = s;
-    if (s) {
-      pushToPieceMap &&
-        pushToPieceMap(s[1] as PieceType, s[0] as Colors, BOARD_IDX[i]);
+      continue;
     }
-  });
 
-  const castleRights = COLORS.reduce<Record<Colors, CastleRights>>(
-    (acc, curr) => {
-      const kingsideStr = curr === 'w' ? 'K' : 'k';
-      const queensideStr = curr === 'w' ? 'Q' : 'q';
+    // char represents a piece
+    const pieceType = char as PieceType;
+    const piece =
+      pieceType.toLowerCase() === pieceType
+        ? (`b${pieceType}` as Piece)
+        : (`w${pieceType.toLowerCase()}` as Piece);
 
-      acc[curr] = {
-        k: castleRightsStr.includes(kingsideStr),
-        q: castleRightsStr.includes(queensideStr)
-      };
-      return acc;
-    },
-    {} as Record<Colors, CastleRights>
-  );
+    // need to access BOARD_IDX because it is a collection of indexes that represent the actual 8x8 board
+    tenBytwelve[BOARD_IDX[idx]] = piece;
+    pushToPieceMap &&
+      pushToPieceMap(piece[1] as PieceType, piece[0] as Colors, BOARD_IDX[idx]);
+    idx++;
+  }
+
+  const castleRights = COLORS.reduce<AllCastleRights>((acc, curr) => {
+    const kingsideStr = curr === 'w' ? 'K' : 'k';
+    const queensideStr = curr === 'w' ? 'Q' : 'q';
+
+    acc[curr] = {
+      k: castleRightsStr.includes(kingsideStr),
+      q: castleRightsStr.includes(queensideStr)
+    };
+    return acc;
+  }, {} as AllCastleRights);
 
   return {
     halfmoves,
@@ -99,6 +91,7 @@ export function convertBoardToFen(board: Board) {
   let fen = '';
 
   // need to iterate over twice
+  // need to iterate over rank first because each fen rank reads the board left to right
   // first loop for ranks
   // inner loop for files
   for (let rank = BOARD_LENGTH - 1; rank >= 0; rank--) {
@@ -125,7 +118,6 @@ export function convertBoardToFen(board: Board) {
     fen += `${rankStr}`;
     if (rank !== 0) fen += '/';
   }
-
   return fen;
 }
 

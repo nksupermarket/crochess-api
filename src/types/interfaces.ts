@@ -1,9 +1,9 @@
 import {
   Square,
-  PieceType,
+  PromotePieceType,
   Side,
   Colors,
-  CastleRights,
+  AllCastleRights,
   Board,
   EnPassant,
   Piece
@@ -14,14 +14,15 @@ export interface MoveDetailsInterface {
   from: Square;
   to: Square;
   piece: Piece;
-  promote?: Exclude<PieceType, 'k' | 'p'>;
+  promote?: PromotePieceType;
   capture?: boolean;
+  checkmate?: boolean;
 }
 
-export interface GameConstructorParams {
+export interface GameState {
   halfmoves: string;
   fullmoves: string;
-  castleRights: Record<Colors, CastleRights>;
+  castleRights: AllCastleRights;
   board: Board;
   enPassant: EnPassant;
   activeColor: Colors;

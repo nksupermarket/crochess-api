@@ -7,9 +7,11 @@ import {
   Piece,
   Side,
   AllPieceMap,
-  Square
+  Square,
+  PromotePieceType
 } from '../types/types';
-import { BOARD_IDX, BOARD_LENGTH, BOARD_SIZE } from '../utils/constants';
+import { BOARD_IDX, BOARD_LENGTH } from '../utils/constants';
+import { buildPieceMap, createBoard, getEmptyPieceMap } from '../utils/board';
 
 export default class Gameboard {
   board: Board;
@@ -18,67 +20,10 @@ export default class Gameboard {
 
   // board is a 10x12 1d array with padding to serve as sentinel values
   constructor(board?: Board) {
-    const pieceMapInit = { w: { k: [] }, b: { k: [] } };
-
-    this.board = board || this.create();
-    this.pieceMap = board
-      ? board.reduce<AllPieceMap>((acc, piece, i) => {
-          if (!piece) return acc;
-
-          const pieceSquares = acc[piece[0] as Colors][piece[1] as PieceType];
-          if (pieceSquares) {
-            pieceSquares.push(i as SquareIdx);
-            pieceSquares.sort();
-          } else
-            acc[piece[0] as Colors][piece[1] as PieceType] = [i as SquareIdx];
-
-          return acc;
-        }, pieceMapInit)
-      : pieceMapInit;
-
+    this.board = board || createBoard();
+    this.pieceMap = board ? buildPieceMap(board) : getEmptyPieceMap();
     // have to bind this method because Game calls super on this function
     this.at = this.at.bind(this);
-  }
-
-  create(): Board {
-    return Array(BOARD_SIZE)
-      .fill(0)
-      .map((s, i) => {
-        if (BOARD_IDX.includes(i as SquareIdx)) return null;
-        return 0;
-      }) as Board;
-  }
-
-  init(board = this.board) {
-    const initPositions = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'] as const;
-
-    for (let i = 0; i < BOARD_IDX.length; i++) {
-      // board_idx is a collection of indexes that represent all indexes not occupied by sentinel values
-      board[BOARD_IDX[i]] = null;
-    }
-
-    for (let i = 0; i < initPositions.length; i++) {
-      board[BOARD_IDX[i]] = `w${initPositions[i]}`;
-      this.pushToPieceMap(initPositions[i], 'w', BOARD_IDX[i]);
-      board[BOARD_IDX[i + BOARD_LENGTH]] = `wp`;
-      this.pushToPieceMap('p', 'w', BOARD_IDX[i + BOARD_LENGTH]);
-
-      board[
-        // need to reverse the order for black side
-        BOARD_IDX[BOARD_IDX.length - 1 - i]
-      ] = `b${initPositions[initPositions.length - 1 - i]}`;
-      this.pushToPieceMap(
-        initPositions[initPositions.length - 1 - i],
-        'b',
-        BOARD_IDX[BOARD_IDX.length - 1 - i]
-      );
-      board[BOARD_IDX[BOARD_IDX.length - 1 - i - BOARD_LENGTH]] = 'bp';
-      this.pushToPieceMap(
-        'p',
-        'b',
-        BOARD_IDX[BOARD_IDX.length - 1 - i - BOARD_LENGTH]
-      );
-    }
   }
 
   pushToPieceMap = (
@@ -143,7 +88,7 @@ export default class Gameboard {
         board[idx] = null;
       },
 
-      promote: (newType: Exclude<PieceType, 'k' | 'p'>) => {
+      promote: (newType: PromotePieceType) => {
         const piece = board[idx];
         if (!piece) return;
         board[idx] = `${piece[0] as Colors}${newType}`;
@@ -199,4 +144,11 @@ export default class Gameboard {
       (side === 'q' ? kingIdx - 2 : kingIdx + 2) as SquareIdx
     );
   };
+
+  isPromoteSquare(color: Colors, square: Square) {
+    const sIdx = convertSquareToIdx(square);
+    const newRank = Math.floor(BOARD_IDX.indexOf(sIdx) / BOARD_LENGTH);
+    const promoteRank = color === 'w' ? 7 : 0;
+    return newRank === promoteRank;
+  }
 }

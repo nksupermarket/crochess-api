@@ -456,7 +456,7 @@ function isPiecePinned(
   return pinned ? pinVector : undefined;
 }
 
-export function getLegalMoves(
+export function getLegalPieceMoves(
   pieceType: Exclude<PieceType, 'k'>,
   board: Board,
   color: Colors,
@@ -509,7 +509,7 @@ export function getMovesForColor(
               castleRights,
               board
             )
-          : getLegalMoves(
+          : getLegalPieceMoves(
               pieceType,
               board,
               color,
