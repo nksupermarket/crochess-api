@@ -11,7 +11,8 @@ import {
   PromotePieceType
 } from '../types/types';
 import { BOARD_IDX, BOARD_LENGTH } from '../utils/constants';
-import { buildPieceMap, createBoard, getEmptyPieceMap } from '../utils/board';
+import { createBoard } from '../utils/board';
+import { buildPieceMap, getEmptyPieceMap } from '../utils/pieceMap';
 
 export default class Gameboard {
   board: Board;

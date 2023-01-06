@@ -17,13 +17,12 @@ import { convertSquareToIdx, convertIdxToSquare } from './square';
 import { getLegalPieceMoves } from './getMoves';
 
 export default function createMoveNotation(
-  details: MoveDetailsInterface | undefined,
+  details: MoveDetailsInterface,
   board: Board,
   pieceMap: AllPieceMap,
-  checks: SquareIdx[]
-): MoveNotation | undefined {
-  if (!details) return;
-
+  checks: SquareIdx[],
+  checkmate: boolean
+): MoveNotation {
   let notation: MoveNotation;
   if (details.castle) {
     notation = details.castle === 'k' ? '0-0' : '0-0-0';
@@ -100,7 +99,7 @@ export default function createMoveNotation(
 
   let suffix: MoveSuffix | '' = '';
   if (checks.length) {
-    suffix = details.checkmate ? '#' : '+';
+    suffix = checkmate ? '#' : '+';
   }
 
   return (notation += suffix);

@@ -1,6 +1,6 @@
 {
   "name": "crochess-api",
-  "version": "2.0.7",
+  "version": "2.2.1",
   "main": "./dist/index",
   "types": "./dist/index.d.ts",
   "files": [
@@ -35,7 +35,7 @@
     "test": "jest --watch",
     "watch": "webpack --watch",
     "start": "webpack serve --open",
-    "build": "webpack",
+    "build": "webpack --mode=production",
     "prepublishOnly": "webpack --mode=production"
   },
   "devDependencies": {

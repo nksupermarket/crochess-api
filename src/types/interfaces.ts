@@ -5,8 +5,8 @@ import {
   Colors,
   AllCastleRights,
   Board,
-  EnPassant,
-  Piece
+  Piece,
+  SquareIdx
 } from './types';
 
 export interface MoveDetailsInterface {
@@ -16,14 +16,13 @@ export interface MoveDetailsInterface {
   piece: Piece;
   promote?: PromotePieceType;
   capture?: boolean;
-  checkmate?: boolean;
 }
 
 export interface GameState {
-  halfmoves: string;
-  fullmoves: string;
+  halfmoves: number;
+  fullmoves: number;
   castleRights: AllCastleRights;
   board: Board;
-  enPassant: EnPassant;
+  enPassant: SquareIdx | null;
   activeColor: Colors;
 }

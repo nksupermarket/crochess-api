@@ -7,9 +7,8 @@ export function convertSquareToIdx(square: Square): SquareIdx {
   ];
 }
 
-export function convertIdxToSquare(idx: SquareIdx): Square | undefined {
+export function convertIdxToSquare(idx: SquareIdx): Square {
   const bIdx = BOARD_IDX.indexOf(idx);
-  if (bIdx === -1) return;
   const file = FILES[bIdx % BOARD_LENGTH];
   const rank = (Math.floor(bIdx / BOARD_LENGTH) + 1) as EnumerateFromOne<
     typeof BOARD_LENGTH

@@ -1,21 +1,28 @@
-import Game from '../classes/Game';
 import {
   Board,
   Colors,
   SquareIdx,
   PieceType,
-  EnPassant,
+  Square,
   Piece,
-  AllCastleRights
+  AllCastleRights,
+  FenStr
 } from '../types/types';
-import { convertIdxToSquare } from './square';
+import { convertIdxToSquare, convertSquareToIdx } from './square';
 import { isFenStr } from './typeCheck';
 import { BOARD_IDX, COLORS, BOARD_LENGTH } from './constants';
 import { GameState } from '../types/interfaces';
 import { createBoard } from './board';
 
+export function getActiveColor(fen: FenStr): Colors | undefined {
+  if (!isFenStr(fen)) return;
+  const split = fen.split(' ');
+
+  return split[1] as Colors;
+}
+
 export function convertFromFen(
-  fen: string,
+  fen: FenStr,
   pushToPieceMap?: (
     pieceType: PieceType,
     color: Colors,
@@ -66,11 +73,11 @@ export function convertFromFen(
     idx++;
   }
 
-  const castleRights = COLORS.reduce<AllCastleRights>((acc, curr) => {
-    const kingsideStr = curr === 'w' ? 'K' : 'k';
-    const queensideStr = curr === 'w' ? 'Q' : 'q';
+  const castleRights = COLORS.reduce<AllCastleRights>((acc, color) => {
+    const kingsideStr = color === 'w' ? 'K' : 'k';
+    const queensideStr = color === 'w' ? 'Q' : 'q';
 
-    acc[curr] = {
+    acc[color] = {
       k: castleRightsStr.includes(kingsideStr),
       q: castleRightsStr.includes(queensideStr)
     };
@@ -78,11 +85,12 @@ export function convertFromFen(
   }, {} as AllCastleRights);
 
   return {
-    halfmoves,
-    fullmoves,
     castleRights,
+    halfmoves: Number(halfmoves),
+    fullmoves: Number(fullmoves),
     board: tenBytwelve as Board,
-    enPassant: enPassant as EnPassant,
+    enPassant:
+      enPassant !== '-' ? convertSquareToIdx(enPassant as Square) : null,
     activeColor: activeColor as Colors
   };
 }
@@ -121,7 +129,7 @@ export function convertBoardToFen(board: Board) {
   return fen;
 }
 
-export function convertToFen(game: Game) {
+export function convertToFen(game: GameState) {
   let fen = convertBoardToFen(game.board);
 
   fen += ` ${game.activeColor}`;
