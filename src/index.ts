@@ -27,6 +27,7 @@ import {
   removeFromPieceMap
 } from './utils/pieceMap';
 import { isFenStr } from './utils/typeCheck';
+import Game from './classes/Game';
 
 function move(s1: SquareIdx | Square, board: Board, pieceMap?: AllPieceMap) {
   const s1Idx: SquareIdx = typeof s1 === 'string' ? convertSquareToIdx(s1) : s1;
@@ -322,4 +323,4 @@ export function isGameOver(
   return gameOver;
 }
 
-export { getChecks };
+export { getChecks, Game };
