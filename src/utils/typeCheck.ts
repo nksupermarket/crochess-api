@@ -23,6 +23,7 @@ export function isFiles(char: string): char is Files {
 }
 
 export function isSquare(value: any): value is Square {
+  if (value == null) return false;
   if (value.length > 2) return false;
   if (!isFiles(value[0])) return false;
   if (FILES.indexOf(value[0]) >= BOARD_LENGTH) return false;
