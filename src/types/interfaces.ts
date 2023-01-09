@@ -20,7 +20,6 @@ export interface MoveDetailsInterface {
 
 export interface GameState {
   halfmoves: number;
-  fullmoves: number;
   castleRights: AllCastleRights;
   board: Board;
   enPassant: SquareIdx | null;

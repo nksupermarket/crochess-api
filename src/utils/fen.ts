@@ -31,14 +31,7 @@ export function convertFromFen(
 ): GameState | undefined {
   if (!isFenStr(fen)) return;
   const split = fen.split(' ');
-  const [
-    boardStr,
-    activeColor,
-    castleRightsStr,
-    enPassant,
-    halfmoves,
-    fullmoves
-  ] = split;
+  const [boardStr, activeColor, castleRightsStr, enPassant, halfmoves] = split;
 
   // convert board
   // need to split into ranks then reverse because otherwise each rank is reversed
@@ -87,7 +80,6 @@ export function convertFromFen(
   return {
     castleRights,
     halfmoves: Number(halfmoves),
-    fullmoves: Number(fullmoves),
     board: tenBytwelve as Board,
     enPassant:
       enPassant !== '-' ? convertSquareToIdx(enPassant as Square) : null,
@@ -144,7 +136,7 @@ export function convertToFen(game: GameState) {
     ? convertIdxToSquare(game.enPassant)
     : '-';
 
-  fen += ` ${enPassantStr} ${game.halfmoves} ${game.fullmoves}`;
+  fen += ` ${enPassantStr} ${game.halfmoves}`;
 
   return fen;
 }

@@ -54,14 +54,7 @@ export function isPieceType(char: string): char is PieceType {
 
 export function isFenStr(str: string): str is FenStr {
   const split = str.split(' ');
-  const [
-    boardStr,
-    activeColor,
-    castleRightsStr,
-    enPassant,
-    halfmoves,
-    fullmoves
-  ] = split;
+  const [boardStr, activeColor, castleRightsStr, enPassant, halfmoves] = split;
   const splitIntoRanks = boardStr.split('/');
   if (splitIntoRanks.length !== BOARD_LENGTH) return false;
 
@@ -85,7 +78,6 @@ export function isFenStr(str: string): str is FenStr {
   if (!isCastleRightsStr(castleRightsStr)) return false;
   if (!isSquare(enPassant) && enPassant !== '-') return false;
   if (isNaN(Number(halfmoves))) return false;
-  if (isNaN(Number(fullmoves))) return false;
 
   return true;
 }

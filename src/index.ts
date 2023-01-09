@@ -208,7 +208,6 @@ export function makeMove(
     }
   }
 
-  if (gameState.activeColor === 'b') gameState.fullmoves++;
   gameState.activeColor = OPP_COLOR[gameState.activeColor];
 
   return moveDetails;

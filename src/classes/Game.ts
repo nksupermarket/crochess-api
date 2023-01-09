@@ -37,20 +37,13 @@ export default class Game extends Gameboard {
       throw new Error('Game was not given a valid fen string');
 
     super();
-    const {
-      board,
-      castleRights,
-      enPassant,
-      halfmoves,
-      fullmoves,
-      activeColor
-    } = convertFromFen(fen, this.pushToPieceMap) as GameState;
+    const { board, castleRights, enPassant, halfmoves, activeColor } =
+      convertFromFen(fen, this.pushToPieceMap) as GameState;
 
     this.board = board;
     this.castleRights = castleRights;
     this.enPassant = isSquare(enPassant) ? convertSquareToIdx(enPassant) : null;
     this.halfmoves = Number(halfmoves);
-    this.fullmoves = Number(fullmoves);
     this.activeColor = activeColor;
     this._checks = null;
   }
