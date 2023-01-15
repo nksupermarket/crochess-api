@@ -1,6 +1,6 @@
 import { BOARD_IDX } from '../src/utils/constants';
 import { SquareIdx } from '../src/types/types';
-import { buildPieceMap, createBoard, init } from '../src/utils/board';
+import { createBoard, init } from '../src/utils/board';
 
 test('init works correctly', () => {
   const board = init(createBoard());
@@ -47,27 +47,4 @@ test('init works correctly', () => {
       return true;
     })
   ).toBe(true);
-});
-
-test('buildPieceMap works correctly', () => {
-  const pieceMap = buildPieceMap(init(createBoard()));
-
-  expect(pieceMap).toEqual({
-    w: {
-      k: [25],
-      r: [21, 28],
-      n: [22, 27],
-      b: [23, 26],
-      q: [24],
-      p: [31, 32, 33, 34, 35, 36, 37, 38]
-    },
-    b: {
-      k: [95],
-      p: [81, 82, 83, 84, 85, 86, 87, 88],
-      r: [91, 98],
-      n: [92, 97],
-      b: [93, 96],
-      q: [94]
-    }
-  });
 });

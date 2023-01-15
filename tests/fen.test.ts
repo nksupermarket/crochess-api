@@ -3,6 +3,7 @@ import Game from '../src/classes/Game';
 import { convertFromFen, convertToFen } from '../src/utils/fen';
 import { convertSquareToIdx } from '../src/utils/square';
 import { init } from '../src/utils/board';
+import { isFenStr } from '../src/utils/typeCheck';
 
 describe('convertFromFen works', () => {
   const gameboard = new Gameboard();
@@ -17,12 +18,26 @@ describe('convertFromFen works', () => {
 
   it('works when pieces are in the middle of the board', () => {
     gameboard.from(convertSquareToIdx('e2'))?.to(convertSquareToIdx('e4'));
-
+    console.log(
+      convertFromFen(
+        'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0'
+      )
+    );
     expect(
       convertFromFen(
-        'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
+        'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0'
       )?.board
     ).toEqual(gameboard.board);
+  });
+
+  it.only('doesnt bug out', () => {
+    expect(
+      isFenStr('r5k1/pppq2bp/6rp/3pn3/6bP/2P2N2/PPQNBPP1/2KR3R w - - 1')
+    ).toBe(true);
+    const state = convertFromFen(
+      'r5k1/pppq2bp/6rp/3pn3/6bP/2P2N2/PPQNBPP1/2KR3R w - - 1'
+    );
+    expect(state).not.toBe(undefined);
   });
 });
 

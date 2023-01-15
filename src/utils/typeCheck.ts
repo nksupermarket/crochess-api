@@ -23,6 +23,7 @@ export function isFiles(char: string): char is Files {
 }
 
 export function isSquare(value: any): value is Square {
+  if (value === '-') return true;
   if (value == null) return false;
   if (value.length > 2) return false;
   if (!isFiles(value[0])) return false;
@@ -36,7 +37,7 @@ export function isColor(char: string): char is Colors {
 }
 
 function isCastleRightsStr(str: string) {
-  const castleRights = ['K', 'k', 'Q', 'q'];
+  const castleRights = ['K', 'k', 'Q', 'q', '-'];
 
   const strMap: { [key: string]: true } = {};
   for (let i = 0; i < str.length; i++) {
@@ -76,7 +77,7 @@ export function isFenStr(str: string): str is FenStr {
 
   if (!isColor(activeColor)) return false;
   if (!isCastleRightsStr(castleRightsStr)) return false;
-  if (!isSquare(enPassant) && enPassant !== '-') return false;
+  if (!isSquare(enPassant)) return false;
   if (isNaN(Number(halfmoves))) return false;
 
   return true;

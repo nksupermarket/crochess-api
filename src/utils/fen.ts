@@ -29,7 +29,6 @@ export function convertFromFen(
     squareIdx: SquareIdx
   ) => void
 ): GameState | undefined {
-  if (!isFenStr(fen)) return;
   const split = fen.split(' ');
   const [boardStr, activeColor, castleRightsStr, enPassant, halfmoves] = split;
 
