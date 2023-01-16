@@ -1,7 +1,6 @@
-import { MoveDetailsInterface } from '../src/types/interfaces';
 import Game from '../src/classes/Game';
 import Gameboard from '../src/classes/Gameboard';
-import { Square } from '../src/types/types';
+import { PromotePieceType, Square } from '../src/types/types';
 import { convertBoardToFen } from '../src/utils/fen';
 import { convertSquareToIdx } from '../src/utils/square';
 
@@ -25,6 +24,23 @@ describe('at().moves works correctly', () => {
 
 describe('makeMoves works', () => {
   const game = new Game();
+
+  it.only('doesnt make errors', () => {
+    const movesStr =
+      'e2e4 b8c6 d2d4 d7d5 e4e5 g8h6 c1h6 g7h6 h2h4 f8g7 g1f3 c8g4 c2c3 e8g8 b1d2 f7f6 e5f6 f8f6 f1e2 f6g6 d1b3 a8b8 e1c1 g4f5 h1g1 g6d6';
+
+    const moves = movesStr.split(' ');
+
+    moves.forEach((move) => {
+      const from = move.slice(0, 2) as Square;
+      const to = move.slice(2, 4) as Square;
+      const promote = move[5] as PromotePieceType | undefined;
+      game.makeMove(from, to, promote);
+    });
+
+    expect(game.board[convertSquareToIdx('d6')]).toBe('br');
+  });
+
   it('moves the piece and changes turns', () => {
     game.makeMove('g1', 'f3');
 

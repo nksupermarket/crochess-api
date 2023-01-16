@@ -1,3 +1,4 @@
+import { MoveDetailsInterface } from 'src/types/interfaces';
 import Game from '../src/classes/Game';
 import Gameboard from '../src/classes/Gameboard';
 import { convertBoardToFen } from '../src/utils/fen';
@@ -9,10 +10,11 @@ const game = new Game();
 test('basic move', () => {
   const details = game.makeMove('e2', 'e4');
   const notation = createMoveNotation(
-    details,
+    details as MoveDetailsInterface,
     game.board,
     game.pieceMap,
-    game.checks
+    game.checks,
+    false
   );
   expect(notation).toBe('e4');
 });
@@ -21,10 +23,11 @@ test('pawn capture', () => {
   game.makeMove('d7', 'd5');
   const details = game.makeMove('e4', 'd5');
   const notation = createMoveNotation(
-    details,
+    details as MoveDetailsInterface,
     game.board,
     game.pieceMap,
-    game.checks
+    game.checks,
+    false
   );
 
   expect(notation).toBe('exd5');
@@ -35,10 +38,11 @@ test('enPassant capture', () => {
 
   const details = game.makeMove('d5', 'e6');
   const notation = createMoveNotation(
-    details,
+    details as MoveDetailsInterface,
     game.board,
     game.pieceMap,
-    game.checks
+    game.checks,
+    false
   );
 
   expect(notation).toBe('dxe6');
@@ -52,10 +56,11 @@ describe('multiple pieces can go to the same square', () => {
     const game = new Game(`${convertBoardToFen(gameboard.board)} w KQkq - 0 1`);
     const details = game.makeMove('c3', 'e2');
     const notation = createMoveNotation(
-      details,
+      details as MoveDetailsInterface,
       game.board,
       game.pieceMap,
-      game.checks
+      game.checks,
+      false
     );
 
     expect(notation).toBe('Nce2');
@@ -69,10 +74,11 @@ describe('multiple pieces can go to the same square', () => {
     const game = new Game(`${convertBoardToFen(gameboard.board)} w KQkq - 0 1`);
     const details = game.makeMove('e4', 'c3');
     const notation = createMoveNotation(
-      details,
+      details as MoveDetailsInterface,
       game.board,
       game.pieceMap,
-      game.checks
+      game.checks,
+      false
     );
 
     expect(notation).toBe('N4c3');
@@ -86,10 +92,11 @@ describe('multiple pieces can go to the same square', () => {
     const game = new Game(`${convertBoardToFen(gameboard.board)} w KQkq - 0 1`);
     const details = game.makeMove('e4', 'c3');
     const notation = createMoveNotation(
-      details,
+      details as MoveDetailsInterface,
       game.board,
       game.pieceMap,
-      game.checks
+      game.checks,
+      false
     );
 
     expect(notation).toBe('Ne4c3');
@@ -114,7 +121,8 @@ describe('checks/checkmates work', () => {
         },
         game.board,
         game.pieceMap,
-        game.checks
+        game.checks,
+        false
       )
     ).toBe('Bc4+');
   });
@@ -135,12 +143,12 @@ describe('checks/checkmates work', () => {
         {
           from: 'h3',
           to: 'f2',
-          piece: 'bn',
-          checkmate: true
+          piece: 'bn'
         },
         game.board,
         game.pieceMap,
-        game.checks
+        game.checks,
+        true
       )
     ).toBe('Nf2#');
   });
@@ -158,7 +166,8 @@ test('promotion works', () => {
       },
       game.board,
       game.pieceMap,
-      game.checks
+      game.checks,
+      false
     )
   ).toBe('a8=Q');
 });
@@ -176,7 +185,8 @@ describe('castling works', () => {
         },
         game.board,
         game.pieceMap,
-        game.checks
+        game.checks,
+        false
       )
     ).toBe('0-0');
   });
@@ -191,7 +201,8 @@ describe('castling works', () => {
         },
         game.board,
         game.pieceMap,
-        game.checks
+        game.checks,
+        false
       )
     ).toBe('0-0-0');
   });

@@ -10,11 +10,11 @@
     "downlevelIteration": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "esModuleInterop": true,
     "declaration": true
   },
   "include": ["./src/**/*"],
-  "exclude": ["test/**/*", "./src/classes/*"],
+  "exclude": ["node_modules", "dist"],
   "types": ["@types/jest"]
 }

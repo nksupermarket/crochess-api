@@ -449,7 +449,7 @@ function isPiecePinned(
       ) {
         pinned = true;
         breakLoop();
-      }
+      } else breakLoop();
     }
   );
 
